@@ -262,6 +262,49 @@
   .save-toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--navy);color:#fff;padding:12px 24px;border-radius:50px;font-size:.88rem;font-weight:600;opacity:0;transition:all .3s;z-index:500;pointer-events:none}
   .save-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
+  /* CHANGELOG DRAWER */
+  .cl-drawer{position:fixed;top:0;right:0;height:100vh;width:420px;max-width:100vw;background:var(--navy);z-index:300;transform:translateX(100%);transition:transform .4s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;box-shadow:-8px 0 48px rgba(13,27,42,.4)}
+  .cl-drawer.open{transform:translateX(0)}
+  .cl-backdrop{position:fixed;inset:0;z-index:299;background:rgba(13,27,42,.5);backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .3s}
+  .cl-backdrop.open{opacity:1;pointer-events:all}
+  .cl-header{padding:28px 28px 20px;border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0}
+  .cl-title{font-family:'Fraunces',serif;font-size:1.5rem;font-weight:900;color:#fff;letter-spacing:-.02em;margin-bottom:4px}
+  .cl-sub{font-size:.78rem;color:rgba(255,255,255,.35);font-weight:500}
+  .cl-close{position:absolute;top:24px;right:24px;width:32px;height:32px;border-radius:50%;border:none;background:rgba(255,255,255,.08);color:rgba(255,255,255,.6);cursor:pointer;font-size:.9rem;display:flex;align-items:center;justify-content:center;transition:all .18s}
+  .cl-close:hover{background:rgba(255,87,51,.25);color:var(--coral)}
+  .cl-body{flex:1;overflow-y:auto;padding:24px 28px 40px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.1) transparent}
+  .cl-body::-webkit-scrollbar{width:4px} .cl-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:4px}
+
+  /* Release card */
+  .cl-release{position:relative;margin-bottom:36px}
+  .cl-release:last-child{margin-bottom:0}
+  .cl-release::before{content:'';position:absolute;left:18px;top:44px;bottom:-36px;width:1.5px;background:linear-gradient(to bottom,rgba(255,255,255,.1),transparent)}
+  .cl-release:last-child::before{display:none}
+  .cl-version-row{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+  .cl-dot{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0;position:relative;z-index:1}
+  .cl-version-tag{font-family:'Fraunces',serif;font-size:.95rem;font-weight:900;color:#fff;letter-spacing:-.01em}
+  .cl-version-date{font-size:.72rem;color:rgba(255,255,255,.3);font-weight:500;margin-left:auto}
+  .cl-release-name{font-size:.78rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 9px;border-radius:50px;margin-left:4px}
+
+  /* Feature entries */
+  .cl-features{padding-left:48px;display:flex;flex-direction:column;gap:10px}
+  .cl-feature{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:12px 14px;transition:all .18s;cursor:default}
+  .cl-feature:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.12)}
+  .cl-feature-top{display:flex;align-items:center;gap:9px;margin-bottom:4px}
+  .cl-feature-icon{font-size:.9rem;flex-shrink:0}
+  .cl-feature-name{font-size:.85rem;font-weight:700;color:#fff}
+  .cl-feature-tag{font-size:.62rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:2px 7px;border-radius:50px;flex-shrink:0}
+  .cl-feature-desc{font-size:.78rem;color:rgba(255,255,255,.45);line-height:1.55;padding-left:27px}
+
+  /* Tag colours */
+  .tag-new{background:rgba(125,190,142,.15);color:#7DBE8E}
+  .tag-improved{background:rgba(167,139,250,.15);color:#A78BFA}
+  .tag-fix{background:rgba(244,197,66,.15);color:var(--gold)}
+
+  /* Nav badge */
+  .cl-nav-badge{position:absolute;top:-3px;right:-3px;width:8px;height:8px;border-radius:50%;background:var(--coral);border:2px solid var(--card-bg);animation:pulse-dot 2s ease-in-out infinite}
+  @keyframes pulse-dot{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.4);opacity:.7}}
+
   /* SPINNER */
   .spinner-overlay{position:fixed;inset:0;z-index:999;background:var(--cream);display:flex;align-items:center;justify-content:center;transition:opacity .4s}
   .spinner-overlay.hide{opacity:0;pointer-events:none}
@@ -289,6 +332,19 @@
 
 <!-- Spinner -->
 <div class="spinner-overlay" id="spinnerOverlay"><div class="spinner"></div></div>
+
+<!-- CHANGELOG BACKDROP -->
+<div class="cl-backdrop" id="clBackdrop" onclick="closeChangelog()"></div>
+
+<!-- CHANGELOG DRAWER -->
+<div class="cl-drawer" id="clDrawer">
+  <div class="cl-header" style="position:relative">
+    <div class="cl-title">What's New ✦</div>
+    <div class="cl-sub">Elaborated over time — every update, every fix.</div>
+    <button class="cl-close" onclick="closeChangelog()">✕</button>
+  </div>
+  <div class="cl-body" id="clBody"></div>
+</div>
 <div class="save-toast" id="saveToast">✓ Saved!</div>
 
 <!-- NAV -->
@@ -298,6 +354,10 @@
     <a class="nav-btn ghost" href="about.html">About</a>
     <a class="nav-btn ghost" href="support.html">Support</a>
     <a class="nav-btn ghost" href="legal.html?tab=terms">Legal</a>
+    <button class="nav-btn ghost" onclick="openChangelog()" style="position:relative">
+      What's New
+      <span class="cl-nav-badge" id="clNavBadge"></span>
+    </button>
     <button class="nav-btn ghost"   id="navLoginBtn"  onclick="showAuth('login')">Log In</button>
     <button class="nav-btn primary" id="navSignupBtn" onclick="showAuth('signup')">Sign Up Free</button>
     <div class="nav-avatar hidden" id="navAvatar">
@@ -1952,6 +2012,150 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById(id)?.addEventListener('keydown', e => { if (e.key==='Enter') doSignup(); });
   });
 });
+
+/* ════════════════════════════════════
+   CHANGELOG
+════════════════════════════════════ */
+const CHANGELOG = [
+  {
+    version: 'v1.5',
+    name: 'The Classroom Update',
+    date: 'Mar 2025',
+    emoji: '🏫',
+    color: 'rgba(125,190,142,.25)',
+    dotColor: '#7DBE8E',
+    features: [
+      { icon:'🏫', name:'Multiple Classrooms', tag:'new', desc:'Students can join multiple classrooms and toggle between them from the sidebar. Teachers can create and manage multiple classes.' },
+      { icon:'⭐', name:'App Favorites', tag:'new', desc:'Star any app to pin it to your personal Favorites view. Badge shows how many you've saved.' },
+      { icon:'◀', name:'Classroom Sidebar', tag:'new', desc:'A collapsible left-hand panel shows your classrooms and views. Clicking a classroom filters apps to that class.' },
+      { icon:'📢', name:'Announcements', tag:'improved', desc:'Teacher announcements are now tied per-classroom. Dismissing one doesn't hide another. Teacher name shown on the banner.' },
+      { icon:'💬', name:'App Requests', tag:'new', desc:'Students can request apps from their teacher. Teacher sees pending requests with a badge count and can approve or decline.' },
+    ]
+  },
+  {
+    version: 'v1.4',
+    name: 'The Security Update',
+    date: 'Mar 2025',
+    emoji: '🔒',
+    color: 'rgba(255,87,51,.2)',
+    dotColor: 'var(--coral)',
+    features: [
+      { icon:'🔒', name:'Account Suspension', tag:'new', desc:'Admins can suspend any user with a custom reason. Suspended users see the reason on the disabled screen and are signed out automatically.' },
+      { icon:'👤', name:'User Management Panel', tag:'new', desc:'Admin dashboard now has a Users tab to look up, suspend, and unsuspend accounts. Includes a live list of all currently suspended users.' },
+      { icon:'🎫', name:'Quick Suspend from Ticket', tag:'new', desc:'When reviewing a support ticket, admins can click Suspend User to jump straight to the user's profile pre-filled.' },
+    ]
+  },
+  {
+    version: 'v1.3',
+    name: 'The Polish Update',
+    date: 'Feb 2025',
+    emoji: '🎨',
+    color: 'rgba(167,139,250,.2)',
+    dotColor: '#A78BFA',
+    features: [
+      { icon:'🎉', name:'Onboarding Flow', tag:'new', desc:'New users get a 4-step visual onboarding walkthrough with progress bar and step illustrations. Only shows once.' },
+      { icon:'🔑', name:'Forgot Password', tag:'new', desc:'Password reset link on the login panel. Sends a Firebase reset email instantly.' },
+      { icon:'🍎', name:'Google Role Selection', tag:'new', desc:'Signing up with Google now shows a Student/Teacher picker for new accounts before saving the profile.' },
+      { icon:'☰', name:'Mobile Hamburger Nav', tag:'new', desc:'On small screens the nav collapses into a hamburger menu with full navigation including classroom links.' },
+      { icon:'🚪', name:'Leave Classroom', tag:'new', desc:'Students can leave a classroom from the dropdown or Settings. Teacher-locked apps are unlocked on leave.' },
+    ]
+  },
+  {
+    version: 'v1.2',
+    name: 'The Classroom Foundation',
+    date: 'Feb 2025',
+    emoji: '📚',
+    color: 'rgba(244,197,66,.18)',
+    dotColor: 'var(--gold)',
+    features: [
+      { icon:'🍎', name:'Teacher Accounts', tag:'new', desc:'Role toggle on signup. Teachers get a classroom auto-created with a 6-character join code.' },
+      { icon:'🔑', name:'Join Classroom', tag:'new', desc:'Students enter a join code to connect to a teacher's classroom. Pinned and locked apps sync automatically.' },
+      { icon:'📱', name:'App Management', tag:'new', desc:'Teachers can push apps to all students, toggle locking, and remove apps from the classroom.' },
+      { icon:'🔒', name:'Locked Apps', tag:'new', desc:'Apps marked as locked by a teacher show a 🔒 icon and cannot be removed by students.' },
+    ]
+  },
+  {
+    version: 'v1.1',
+    name: 'The Support Update',
+    date: 'Jan 2025',
+    emoji: '🎫',
+    color: 'rgba(255,87,51,.15)',
+    dotColor: 'rgba(255,87,51,.7)',
+    features: [
+      { icon:'🎫', name:'Support Tickets', tag:'new', desc:'Users can submit support tickets. Auto-generated ticket IDs, category selection, and message field.' },
+      { icon:'💬', name:'Real-time Chat', tag:'new', desc:'Two-way live chat between user and admin on every ticket using Firestore onSnapshot.' },
+      { icon:'🛡', name:'Admin Dashboard', tag:'new', desc:'Admin-only panel with ticket list, status management, stats, and chat.' },
+    ]
+  },
+  {
+    version: 'v1.0',
+    name: 'Launch',
+    date: 'Jan 2025',
+    emoji: '🚀',
+    color: 'rgba(255,255,255,.06)',
+    dotColor: 'rgba(255,255,255,.3)',
+    features: [
+      { icon:'🏠', name:'App Hub', tag:'new', desc:'Personal app grid with tabs, search, categories, and custom app pinning.' },
+      { icon:'🔐', name:'Authentication', tag:'new', desc:'Email/password and Google sign-in. Persistent profiles stored in Firestore per user.' },
+      { icon:'🎨', name:'Themes', tag:'new', desc:'Four themes: Classic, Midnight, Ocean, and Forest. Stored in user settings.' },
+      { icon:'⚙', name:'Settings', tag:'new', desc:'Profile editing, theme picker, display preferences, and account deletion.' },
+    ]
+  }
+];
+
+const CL_KEY = 'clLastSeen';
+
+window.openChangelog = function() {
+  document.getElementById('clDrawer').classList.add('open');
+  document.getElementById('clBackdrop').classList.add('open');
+  renderChangelog();
+  // Mark as seen
+  localStorage.setItem(CL_KEY, CHANGELOG[0].version);
+  document.getElementById('clNavBadge').style.display = 'none';
+};
+
+window.closeChangelog = function() {
+  document.getElementById('clDrawer').classList.remove('open');
+  document.getElementById('clBackdrop').classList.remove('open');
+};
+
+function renderChangelog() {
+  const body = document.getElementById('clBody');
+  if (body.innerHTML) return; // already rendered
+  body.innerHTML = CHANGELOG.map((rel, ri) => `
+    <div class="cl-release" style="animation:fadeUp .4s ${ri*0.07}s both">
+      <div class="cl-version-row">
+        <div class="cl-dot" style="background:${rel.color};box-shadow:0 0 0 1.5px ${rel.dotColor}33">${rel.emoji}</div>
+        <span class="cl-version-tag">${rel.version}</span>
+        <span class="cl-release-name" style="background:${rel.color};color:${rel.dotColor}">${rel.name}</span>
+        <span class="cl-version-date">${rel.date}</span>
+      </div>
+      <div class="cl-features">
+        ${rel.features.map(f => `
+          <div class="cl-feature">
+            <div class="cl-feature-top">
+              <span class="cl-feature-icon">${f.icon}</span>
+              <span class="cl-feature-name">${f.name}</span>
+              <span class="cl-feature-tag tag-${f.tag}">${f.tag}</span>
+            </div>
+            <div class="cl-feature-desc">${f.desc}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function checkChangelogBadge() {
+  const seen = localStorage.getItem(CL_KEY);
+  if (seen !== CHANGELOG[0].version) {
+    document.getElementById('clNavBadge').style.display = 'block';
+  } else {
+    document.getElementById('clNavBadge').style.display = 'none';
+  }
+}
+checkChangelogBadge();
+
 </script>
 </body>
 </html>
