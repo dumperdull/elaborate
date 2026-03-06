@@ -596,6 +596,13 @@
           </div>
           <button class="settings-save-btn danger" onclick="logout()">Sign Out</button>
         </div>
+        <div class="settings-row">
+          <div class="settings-row-info">
+            <h4>Delete account</h4>
+            <p>Permanently delete your account and all your data. This cannot be undone.</p>
+          </div>
+          <button class="settings-save-btn danger" onclick="showDeleteModal()" style="background:var(--coral);color:#fff;border-color:var(--coral)">Delete Account</button>
+        </div>
       </div>
     </div>
 
@@ -633,6 +640,25 @@
   </div>
 </div>
 
+<!-- DELETE ACCOUNT MODAL -->
+<div class="modal-overlay" id="deleteAccountModal" onclick="if(event.target===this)closeDeleteModal()">
+  <div class="modal" style="max-width:420px">
+    <button class="modal-close" onclick="closeDeleteModal()">✕</button>
+    <h2 style="color:var(--coral)">Delete Account</h2>
+    <p class="modal-sub" style="line-height:1.7">This will permanently delete your account and all your data including your hub, apps, and settings. <strong>This cannot be undone.</strong></p>
+    <div class="auth-error" id="deleteError"></div>
+    <div class="form-group" style="margin-top:20px">
+      <label>Type <strong>DELETE</strong> to confirm</label>
+      <input type="text" id="deleteConfirmInput" placeholder="DELETE" autocomplete="off" />
+    </div>
+    <div class="form-group">
+      <label>Enter your password to confirm</label>
+      <input type="password" id="deletePasswordInput" placeholder="Your password" />
+    </div>
+    <button class="modal-submit" onclick="doDeleteAccount()" style="background:var(--coral);margin-top:4px">Permanently Delete My Account</button>
+  </div>
+</div>
+
 <!-- Firebase SDK -->
 <script type="module">
 /* ============================================================
@@ -658,8 +684,10 @@ import { initializeApp }                                        from 'https://ww
 import { getAuth, createUserWithEmailAndPassword,
          signInWithEmailAndPassword, signOut,
          onAuthStateChanged, GoogleAuthProvider,
-         signInWithPopup }                                      from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs, addDoc, serverTimestamp, updateDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+         signInWithPopup, EmailAuthProvider,
+         reauthenticateWithCredential,
+         deleteUser }                                           from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs, addDoc, serverTimestamp, updateDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const app      = initializeApp(firebaseConfig);
 const auth     = getAuth(app);
@@ -802,6 +830,61 @@ window.doLogin = async function() {
     } else {
       authErr(err, firebaseErrMsg(e.code));
     }
+  }
+};
+
+window.showDeleteModal = function() {
+  document.getElementById('deleteConfirmInput').value = '';
+  document.getElementById('deletePasswordInput').value = '';
+  document.getElementById('deleteError').classList.remove('show');
+  document.getElementById('deleteAccountModal').classList.add('open');
+};
+window.closeDeleteModal = function() {
+  document.getElementById('deleteAccountModal').classList.remove('open');
+};
+
+window.doDeleteAccount = async function() {
+  const confirm = document.getElementById('deleteConfirmInput').value.trim();
+  const password = document.getElementById('deletePasswordInput').value;
+  const errEl = document.getElementById('deleteError');
+  errEl.classList.remove('show');
+
+  if (confirm !== 'DELETE') {
+    errEl.textContent = 'Please type DELETE exactly to confirm.';
+    errEl.classList.add('show'); return;
+  }
+  if (!password) {
+    errEl.textContent = 'Please enter your password.';
+    errEl.classList.add('show'); return;
+  }
+  if (!currentUser) return;
+
+  try {
+    // Re-authenticate first (required by Firebase before deleting)
+    const credential = EmailAuthProvider.credential(currentUser.email, password);
+    await reauthenticateWithCredential(currentUser, credential);
+
+    // Delete Firestore profile
+    await deleteDoc(doc(db, 'users', currentUser.uid));
+
+    // Delete the Firebase Auth account
+    await deleteUser(currentUser);
+
+    // Done — send to home
+    currentUser = null; userProfile = null;
+    closeDeleteModal();
+    updateNav(false);
+    showScreen('home');
+    setTimeout(() => showToast('Your account has been deleted.'), 300);
+  } catch(e) {
+    const msgs = {
+      'auth/wrong-password':    'Incorrect password. Please try again.',
+      'auth/invalid-credential':'Incorrect password. Please try again.',
+      'auth/too-many-requests': 'Too many attempts. Please try again later.',
+      'auth/requires-recent-login': 'Please sign out and sign back in before deleting.',
+    };
+    errEl.textContent = msgs[e.code] || 'Something went wrong. Please try again.';
+    errEl.classList.add('show');
   }
 };
 
