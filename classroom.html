@@ -221,6 +221,8 @@ const EMOJIS=['📚','🔬','🎨','🧮','🌍','💡','🎵','📝','🏆','�
 const COLORS=[{val:'rgba(255,87,51,.12)',dot:'#FF5733'},{val:'rgba(244,197,66,.18)',dot:'#F4C542'},{val:'rgba(125,190,142,.18)',dot:'#7DBE8E'},{val:'rgba(167,139,250,.18)',dot:'#A78BFA'},{val:'rgba(56,189,248,.15)',dot:'#38BDF8'},{val:'rgba(13,27,42,.08)',dot:'#0D1B2A'}];
 
 let currentUser=null,teacherProfile=null,classroom=null,classroomId=null,students=[],selectedEmoji='📚';
+// Classroom ID can come from ?id= param (multi-classroom) or from user profile (legacy)
+const URL_CLASS_ID = new URLSearchParams(window.location.search).get('id');
 
 onAuthStateChanged(auth,async user=>{
   if(!user){show('guardLogin');return;}
@@ -229,14 +231,12 @@ onAuthStateChanged(auth,async user=>{
   if(!snap.exists()){show('guardLogin');return;}
   teacherProfile=snap.data();
 
-  // Auto-upgrade: if no role set, or role is not teacher but they're trying to
-  // access this page — prompt and upgrade rather than blocking
+  // Auto-upgrade: if no role set, prompt upgrade
   if((teacherProfile.role||'')!=='teacher'){
     const upgrade=confirm(
       'Your account is not set as a Teacher yet.\n\nClick OK to upgrade to a Teacher account and create your classroom now.\nClick Cancel to go back to the hub.'
     );
     if(!upgrade){window.location.href='index.html';return;}
-    // Upgrade to teacher + create classroom
     const code=genCode();
     const ref=doc(collection(db,'classrooms'));
     await setDoc(ref,{
@@ -248,41 +248,56 @@ onAuthStateChanged(auth,async user=>{
     });
     teacherProfile.role='teacher';
     teacherProfile.classroomId=ref.id;
+    teacherProfile.classroomIds=[ref.id];
     await setDoc(doc(db,'users',user.uid),teacherProfile);
+    if(!URL_CLASS_ID) window.location.href='classroom.html?id='+ref.id;
+    return;
   }
 
-  // Create classroom if missing (teacher account but no classroom doc)
-  if(!teacherProfile.classroomId){
-    const code=genCode();
-    const ref=doc(collection(db,'classrooms'));
-    await setDoc(ref,{
-      name:`${teacherProfile.firstName||''} ${teacherProfile.lastName||''}'s Class`,
-      teacherUid:user.uid,
-      teacherName:`${teacherProfile.firstName||''} ${teacherProfile.lastName||''}`,
-      joinCode:code,pinnedApps:[],lockedAppIds:[],
-      createdAt:serverTimestamp()
-    });
-    teacherProfile.classroomId=ref.id;
-    await setDoc(doc(db,'users',user.uid),teacherProfile);
-  }
-
-  classroomId=teacherProfile.classroomId;
-  const clsSnap=await getDoc(doc(db,'classrooms',classroomId));
-  if(!clsSnap.exists()){
-    // Classroom doc missing — recreate it
-    const code=genCode();
-    await setDoc(doc(db,'classrooms',classroomId),{
-      name:`${teacherProfile.firstName||''} ${teacherProfile.lastName||''}'s Class`,
-      teacherUid:user.uid,
-      teacherName:`${teacherProfile.firstName||''} ${teacherProfile.lastName||''}`,
-      joinCode:code,pinnedApps:[],lockedAppIds:[],
-      createdAt:serverTimestamp()
-    });
-    const newSnap=await getDoc(doc(db,'classrooms',classroomId));
-    classroom=newSnap.data();
+  // If ?id= was provided, use it directly (verify ownership below)
+  if(URL_CLASS_ID){
+    classroomId=URL_CLASS_ID;
   } else {
-    classroom=clsSnap.data();
+    // Legacy: use classroomId from profile, or pick first owned classroom
+    if(teacherProfile.classroomId){
+      classroomId=teacherProfile.classroomId;
+    } else {
+      // Find any classroom owned by this teacher
+      const q=query(collection(db,'classrooms'),where('teacherUid','==',user.uid));
+      const owned=await getDocs(q);
+      if(!owned.empty){
+        classroomId=owned.docs[0].id;
+        teacherProfile.classroomId=classroomId;
+        await setDoc(doc(db,'users',user.uid),teacherProfile);
+      } else {
+        // Create first classroom
+        const code=genCode();
+        const ref=doc(collection(db,'classrooms'));
+        await setDoc(ref,{
+          name:`${teacherProfile.firstName||''} ${teacherProfile.lastName||''}'s Class`,
+          teacherUid:user.uid,
+          teacherName:`${teacherProfile.firstName||''} ${teacherProfile.lastName||''}`,
+          joinCode:code,pinnedApps:[],lockedAppIds:[],
+          createdAt:serverTimestamp()
+        });
+        classroomId=ref.id;
+        teacherProfile.classroomId=classroomId;
+        await setDoc(doc(db,'users',user.uid),teacherProfile);
+        window.location.href='classroom.html?id='+classroomId;
+        return;
+      }
+    }
+    window.location.href='classroom.html?id='+classroomId;
+    return;
   }
+
+  const clsSnap=await getDoc(doc(db,'classrooms',classroomId));
+  if(!clsSnap.exists()||clsSnap.data().teacherUid!==user.uid){
+    alert('Classroom not found or you do not have access.');
+    window.location.href='index.html';
+    return;
+  }
+  classroom=clsSnap.data();
 
   // Show the page immediately so layout is visible even if data takes time
   show('mainPage');
@@ -419,7 +434,8 @@ window.declineRequest=async function(reqId){
 };
 
 async function loadStudents(){
-  const q=query(collection(db,'users'),where('classroomId','==',classroomId));
+  // Query both old single-id field and new array field
+  const q=query(collection(db,'users'),where('classroomIds','array-contains',classroomId));
   const snap=await getDocs(q);
   students=snap.docs.map(d=>({uid:d.id,profile:d.data()})).filter(s=>s.uid!==currentUser.uid);
 }
@@ -568,6 +584,29 @@ window.saveAnnouncement=async function(){
   classroom.announcement=msg;
   toast(msg?'📢 Announcement posted to all students!':'Announcement cleared.');
 };
+
+window.promptSwitchClass=async function(){
+  const q=query(collection(db,'classrooms'),where('teacherUid','==',currentUser.uid));
+  const owned=await getDocs(q);
+  if(owned.empty){toast('No other classrooms found.');return;}
+  const others=owned.docs.filter(d=>d.id!==classroomId);
+  if(!others.length){toast('You only have one classroom. Use + New Classroom in your Hub to create more.');return;}
+  const opts=others.map((d,i)=>`${i+1}. ${d.data().name||d.id}`).join('\n');
+  const idx=parseInt(prompt('Switch to which classroom?\n'+opts+'\n\nEnter a number:'));
+  if(!idx||idx<1||idx>others.length)return;
+  window.location.href='classroom.html?id='+others[idx-1].id;
+};
+
+// Show switch button if teacher has >1 classroom
+async function checkMultiClass(){
+  try{
+    const q=query(collection(db,'classrooms'),where('teacherUid','==',currentUser.uid));
+    const owned=await getDocs(q);
+    if(owned.docs.length>1){
+      document.getElementById('switchClassBtn').style.display='inline-flex';
+    }
+  }catch(e){}
+}
 
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function toast(msg='✓ Saved!'){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500)}
