@@ -728,6 +728,7 @@ window.doGoogleSignIn = async function() {
       userProfile = {
         firstName: nameParts[0] || 'Student',
         lastName:  nameParts.slice(1).join(' ') || '',
+        role:      'student',
         apps:      DEFAULT_APPS(),
         nextId:    9,
         settings:  { theme:'default', newTab:true, showCat:true, compact:false }
@@ -831,11 +832,14 @@ onAuthStateChanged(auth, async (user) => {
   hideSpinner();
   if (user) {
     currentUser = user;
-    const exists = await loadProfile(user.uid);
-    if (!exists) {
-      const nameParts = (user.displayName || '').split(' ');
-      userProfile = { firstName: nameParts[0]||'', lastName: nameParts.slice(1).join(' ')||'', apps: DEFAULT_APPS(), nextId: 9, settings: { theme:'default', newTab:true, showCat:true, compact:false } };
-      await saveProfile();
+    // Only load from Firestore if doSignup hasn't already set userProfile
+    if (!userProfile) {
+      const exists = await loadProfile(user.uid);
+      if (!exists) {
+        const nameParts = (user.displayName || '').split(' ');
+        userProfile = { firstName: nameParts[0]||'Student', lastName: nameParts.slice(1).join(' ')||'', apps: DEFAULT_APPS(), nextId: 9, settings: { theme:'default', newTab:true, showCat:true, compact:false } };
+        await saveProfile();
+      }
     }
     // Ensure settings object exists for older accounts
     if (!userProfile.settings) {
