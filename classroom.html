@@ -209,20 +209,61 @@ onAuthStateChanged(auth,async user=>{
   const snap=await getDoc(doc(db,'users',user.uid));
   if(!snap.exists()){show('guardLogin');return;}
   teacherProfile=snap.data();
-  if((teacherProfile.role||'student')!=='teacher'){show('guardTeacher');return;}
 
-  // Create classroom if teacher somehow doesn't have one
+  // Auto-upgrade: if no role set, or role is not teacher but they're trying to
+  // access this page — prompt and upgrade rather than blocking
+  if((teacherProfile.role||'')!=='teacher'){
+    const upgrade=confirm(
+      'Your account is not set as a Teacher yet.\n\nClick OK to upgrade to a Teacher account and create your classroom now.\nClick Cancel to go back to the hub.'
+    );
+    if(!upgrade){window.location.href='index.html';return;}
+    // Upgrade to teacher + create classroom
+    const code=genCode();
+    const ref=doc(collection(db,'classrooms'));
+    await setDoc(ref,{
+      name:`${teacherProfile.firstName||''} ${teacherProfile.lastName||''}'s Class`,
+      teacherUid:user.uid,
+      teacherName:`${teacherProfile.firstName||''} ${teacherProfile.lastName||''}`,
+      joinCode:code,pinnedApps:[],lockedAppIds:[],
+      createdAt:serverTimestamp()
+    });
+    teacherProfile.role='teacher';
+    teacherProfile.classroomId=ref.id;
+    await setDoc(doc(db,'users',user.uid),teacherProfile);
+  }
+
+  // Create classroom if missing (teacher account but no classroom doc)
   if(!teacherProfile.classroomId){
     const code=genCode();
     const ref=doc(collection(db,'classrooms'));
-    await setDoc(ref,{name:`${teacherProfile.firstName||''} ${teacherProfile.lastName||''}'s Class`,teacherUid:user.uid,teacherName:`${teacherProfile.firstName||''} ${teacherProfile.lastName||''}`,joinCode:code,pinnedApps:[],lockedAppIds:[],createdAt:serverTimestamp()});
+    await setDoc(ref,{
+      name:`${teacherProfile.firstName||''} ${teacherProfile.lastName||''}'s Class`,
+      teacherUid:user.uid,
+      teacherName:`${teacherProfile.firstName||''} ${teacherProfile.lastName||''}`,
+      joinCode:code,pinnedApps:[],lockedAppIds:[],
+      createdAt:serverTimestamp()
+    });
     teacherProfile.classroomId=ref.id;
-    await updateDoc(doc(db,'users',user.uid),{classroomId:ref.id});
+    await setDoc(doc(db,'users',user.uid),teacherProfile);
   }
+
   classroomId=teacherProfile.classroomId;
   const clsSnap=await getDoc(doc(db,'classrooms',classroomId));
-  if(!clsSnap.exists()){show('guardTeacher');return;}
-  classroom=clsSnap.data();
+  if(!clsSnap.exists()){
+    // Classroom doc missing — recreate it
+    const code=genCode();
+    await setDoc(doc(db,'classrooms',classroomId),{
+      name:`${teacherProfile.firstName||''} ${teacherProfile.lastName||''}'s Class`,
+      teacherUid:user.uid,
+      teacherName:`${teacherProfile.firstName||''} ${teacherProfile.lastName||''}`,
+      joinCode:code,pinnedApps:[],lockedAppIds:[],
+      createdAt:serverTimestamp()
+    });
+    const newSnap=await getDoc(doc(db,'classrooms',classroomId));
+    classroom=newSnap.data();
+  } else {
+    classroom=clsSnap.data();
+  }
 
   await loadStudents();
   renderHeader();
