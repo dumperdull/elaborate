@@ -92,13 +92,13 @@
 <section class="page-hero">
   <div class="hero-tag">✦ We're here to help</div>
   <h1>Support <em>Center</em></h1>
-  <p>Having trouble? Submit a ticket and we'll look into it. We read every single one.</p>
+  <p>Having trouble? Submit a ticket and we'll look into it.</p>
 </section>
 
 <div class="support-layout">
   <div class="ticket-card">
     <h2>Submit a Ticket</h2>
-    <p class="ticket-sub">Fill out the form below and we'll get back to you as soon as we can.</p>
+    <p class="ticket-sub">Fill out the form below and we'll get back to you as soon as we can. Note: For smaller issues we will reply within a week. For larger issues it may take us 2 weeks to a month.</p>
     <div class="form-error" id="formError"></div>
     <div class="ticket-form" id="ticketForm">
       <div class="form-row">
@@ -135,6 +135,7 @@
     </div>
   </div>
 
+  <!-- SIDEBAR -->
   <div class="sidebar">
     <div class="sidebar-card">
       <h3>System Status</h3>
@@ -144,6 +145,7 @@
       </div>
       <div style="font-size:.78rem;color:var(--muted);margin-top:4px" id="statusTime"></div>
     </div>
+
     <div class="sidebar-card">
       <h3>Your Tickets</h3>
       <div id="sidebarTicketInfo" style="font-size:.88rem;color:var(--muted);line-height:1.6">
@@ -151,14 +153,35 @@
       </div>
       <a href="my-tickets.html" id="sidebarTicketsLink" style="display:none;margin-top:14px;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:600;color:var(--navy);text-decoration:none;transition:color var(--tr)" onmouseover="this.style.color='var(--coral)'" onmouseout="this.style.color='var(--navy)'">→ View My Tickets</a>
     </div>
+
     <div class="sidebar-card">
       <h3>Common Questions</h3>
-      <div class="faq-item" onclick="toggleFaq(this)"><div class="faq-q">How do I add a custom app? <span class="arrow">▼</span></div><div class="faq-a">Go to your hub and click the "Add App" card at the end of the grid. You can give it a name, URL, icon, and color.</div></div>
-      <div class="faq-item" onclick="toggleFaq(this)"><div class="faq-q">I forgot my password. <span class="arrow">▼</span></div><div class="faq-a">On the login screen, use the "Forgot password" link to reset it via email. If you signed up with Google, use Google Sign-In instead.</div></div>
-      <div class="faq-item" onclick="toggleFaq(this)"><div class="faq-q">Why was my account disabled? <span class="arrow">▼</span></div><div class="faq-a">Accounts can be disabled for violating our usage policy or at the request of a school administrator. Submit a ticket with the "Suspension appeal" category to contest it.</div></div>
-      <div class="faq-item" onclick="toggleFaq(this)"><div class="faq-q">Is Elaborate really free? <span class="arrow">▼</span></div><div class="faq-a">Yes — completely free. No ads, no premium tiers, no hidden fees.</div></div>
-      <div class="faq-item" onclick="toggleFaq(this)"><div class="faq-q">How do I change my theme? <span class="arrow">▼</span></div><div class="faq-a">Click your avatar in the top right → Settings → Theme. Pick from Default, Dark, Ocean, and Forest.</div></div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">How do I add a custom app? <span class="arrow">▼</span></div>
+        <div class="faq-a">Go to your hub and click the "Add App" card at the end of the grid. You can give it a name, URL, icon, and color.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">I forgot my password. <span class="arrow">▼</span></div>
+        <div class="faq-a">On the login screen, use the "Forgot password" link to reset it via email. If you signed up with Google, use Google Sign-In instead.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">Why was my account disabled? <span class="arrow">▼</span></div>
+        <div class="faq-a">Accounts can be disabled for violating our usage policy or at the request of a school administrator. Submit a ticket with the "Suspension appeal" category to contest it.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">Is Elaborate really free? <span class="arrow">▼</span></div>
+        <div class="faq-a">Yes — completely free. No ads, no premium tiers, no hidden fees.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">How do I change my theme? <span class="arrow">▼</span></div>
+        <div class="faq-a">Click your avatar in the top right → Settings → Theme. Pick from Default, Dark, Ocean, and Forest.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">How long does support take to reply? <span class="arrow">▼</span></div>
+        <div class="faq-a">For smaller issues, up to a week. For larger issues like suspension appeals, it can take 2 weeks to a month.</div>
+      </div>
     </div>
+
     <div class="sidebar-card">
       <h3>Other Resources</h3>
       <div style="display:flex;flex-direction:column;gap:10px">
@@ -167,8 +190,8 @@
         <a href="legal.html?tab=privacy" style="font-size:.88rem;font-weight:600;color:var(--navy);text-decoration:none;transition:color var(--tr)" onmouseover="this.style.color='var(--coral)'" onmouseout="this.style.color='var(--navy)'">→ Privacy Policy</a>
       </div>
     </div>
-  </div>
-</div>
+  </div><!-- /sidebar -->
+</div><!-- /support-layout -->
 
 <footer>
   <strong>Elaborate.</strong> &nbsp;Project Elaborate. Use of AI included as this is an experiment. All rights reserved &nbsp;·&nbsp; © 2025
@@ -200,7 +223,6 @@ onAuthStateChanged(auth, user => {
     document.getElementById('myTicketsNavBtn').style.display = 'inline-flex';
     document.getElementById('sidebarTicketInfo').textContent = 'You can view all your submitted tickets and chat with support.';
     document.getElementById('sidebarTicketsLink').style.display = 'inline-block';
-    // Pre-fill form if profile available
     const name = (user.displayName || '').split(' ');
     if (name[0]) document.getElementById('ticketFirst').value = name[0];
     if (name[1]) document.getElementById('ticketLast').value  = name.slice(1).join(' ');
@@ -265,12 +287,19 @@ window.resetForm = function() {
 };
 
 async function checkStatus() {
-  const dot = document.getElementById('statusDot'), label = document.getElementById('statusLabel'), time = document.getElementById('statusTime');
+  const dot = document.getElementById('statusDot');
+  const label = document.getElementById('statusLabel');
+  const time  = document.getElementById('statusTime');
   try {
     const res = await fetch('https://firestore.googleapis.com/v1/projects/elaborate-edc16/databases/(default)/documents/status',{method:'GET',signal:AbortSignal.timeout(5000)});
-    if (res.status < 500) { dot.style.background='#7DBE8E'; dot.style.boxShadow='0 0 0 3px rgba(125,190,142,.25)'; label.textContent='All systems operational'; }
-    else throw new Error();
-  } catch(e) { dot.style.background='#FF5733'; dot.style.boxShadow='0 0 0 3px rgba(255,87,51,.25)'; label.textContent='Service may be degraded'; }
+    if (res.status < 500) {
+      dot.style.background='#7DBE8E'; dot.style.boxShadow='0 0 0 3px rgba(125,190,142,.25)';
+      label.textContent='All systems operational';
+    } else throw new Error();
+  } catch(e) {
+    dot.style.background='#FF5733'; dot.style.boxShadow='0 0 0 3px rgba(255,87,51,.25)';
+    label.textContent='Service may be degraded';
+  }
   time.textContent = 'Checked at ' + new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
 }
 checkStatus();
