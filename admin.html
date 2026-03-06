@@ -241,7 +241,58 @@
     </div>
 
   </div>
-</div>
+</div><!-- /tabTickets -->
+
+<!-- USERS TAB -->
+<div id="tabUsers" style="display:none">
+  <div class="dash-main">
+
+    <!-- Suspend a user -->
+    <div style="background:#1E293B;border-radius:20px;padding:28px 32px;border:1.5px solid rgba(255,255,255,.06);margin-bottom:24px">
+      <h3 style="font-family:'Fraunces',serif;font-size:1.2rem;font-weight:900;color:#F9FAFB;margin-bottom:6px">Suspend a User</h3>
+      <p style="font-size:.84rem;color:rgba(255,255,255,.4);margin-bottom:20px;line-height:1.5">Look up a user by email, add a suspension reason, and disable their account. They will see your message when they try to log in.</p>
+      <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:end;margin-bottom:16px">
+        <div>
+          <div style="font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:8px">User Email</div>
+          <input type="email" id="suspendEmail" placeholder="student@school.edu"
+            style="width:100%;padding:12px 16px;border-radius:12px;border:1.5px solid rgba(255,255,255,.08);background:#111827;color:#F9FAFB;font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;transition:border-color .2s"
+            onfocus="this.style.borderColor='var(--coral)'" onblur="this.style.borderColor='rgba(255,255,255,.08)'" />
+        </div>
+        <button onclick="lookupUser()" style="padding:12px 22px;border-radius:50px;border:none;background:rgba(255,255,255,.08);color:#F9FAFB;font-family:'DM Sans',sans-serif;font-weight:600;font-size:.88rem;cursor:pointer;transition:all .2s;white-space:nowrap" onmouseover="this.style.background='rgba(255,255,255,.14)'" onmouseout="this.style.background='rgba(255,255,255,.08)'">Look Up →</button>
+      </div>
+
+      <div id="userLookupResult" style="display:none">
+        <div style="background:#111827;border-radius:14px;padding:20px 22px;border:1.5px solid rgba(255,255,255,.06);margin-bottom:16px">
+          <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
+            <div id="userLookupAvatar" style="width:40px;height:40px;border-radius:50%;background:var(--coral);display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:900;font-size:1rem;color:#fff;flex-shrink:0"></div>
+            <div>
+              <div id="userLookupName"  style="font-weight:700;color:#F9FAFB;font-size:.95rem"></div>
+              <div id="userLookupEmail" style="font-size:.78rem;color:rgba(255,255,255,.4);margin-top:2px"></div>
+            </div>
+            <div id="userLookupStatus" style="margin-left:auto;font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:4px 10px;border-radius:50px"></div>
+          </div>
+          <div style="font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:8px">Suspension Reason</div>
+          <textarea id="suspendReason" rows="3" placeholder="e.g. Your account has been suspended for violating our terms of service. Please contact support to appeal."
+            style="width:100%;padding:12px 16px;border-radius:12px;border:1.5px solid rgba(255,255,255,.08);background:#0F172A;color:#F9FAFB;font-family:'DM Sans',sans-serif;font-size:.88rem;outline:none;resize:vertical;min-height:80px;transition:border-color .2s;line-height:1.5"
+            onfocus="this.style.borderColor='var(--coral)'" onblur="this.style.borderColor='rgba(255,255,255,.08)'"></textarea>
+          <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+            <button id="suspendBtn"   onclick="suspendUser()"   style="padding:10px 22px;border-radius:50px;border:none;background:var(--coral);color:#fff;font-family:'DM Sans',sans-serif;font-weight:600;font-size:.88rem;cursor:pointer;transition:all .2s">🔒 Suspend Account</button>
+            <button id="unsuspendBtn" onclick="unsuspendUser()" style="display:none;padding:10px 22px;border-radius:50px;border:1.5px solid rgba(125,190,142,.3);background:rgba(125,190,142,.1);color:#7DBE8E;font-family:'DM Sans',sans-serif;font-weight:600;font-size:.88rem;cursor:pointer;transition:all .2s">✓ Unsuspend Account</button>
+          </div>
+        </div>
+      </div>
+      <div id="userLookupError" style="display:none;color:var(--coral);font-size:.84rem;padding:8px 0"></div>
+    </div>
+
+    <!-- Suspended accounts list -->
+    <div style="background:#1E293B;border-radius:20px;padding:28px 32px;border:1.5px solid rgba(255,255,255,.06)">
+      <h3 style="font-family:'Fraunces',serif;font-size:1.1rem;font-weight:900;color:#F9FAFB;margin-bottom:4px">Suspended Accounts</h3>
+      <p style="font-size:.82rem;color:rgba(255,255,255,.35);margin-bottom:20px">Users with an active suspension in Firestore.</p>
+      <div id="suspendedList"><div style="text-align:center;padding:32px;color:rgba(255,255,255,.25);font-size:.88rem">Loading…</div></div>
+    </div>
+
+  </div>
+</div><!-- /tabUsers -->
 
 <!-- ══ TICKET DETAIL MODAL ══ -->
 <div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
@@ -279,10 +330,14 @@
       <div id="adminChatMessages" style="max-height:240px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:12px;background:#111827;border-radius:12px;margin-top:4px">
         <div style="text-align:center;color:rgba(255,255,255,.3);font-size:.82rem;padding:12px">Loading conversation…</div>
       </div>
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <input type="text" id="adminChatInput" placeholder="Type a reply…" onkeydown="if(event.key==='Enter')sendAdminMessage()"
-          style="flex:1;padding:10px 14px;border-radius:10px;border:1.5px solid rgba(255,255,255,.1);background:#111827;color:#F9FAFB;font-family:'DM Sans',sans-serif;font-size:.88rem;outline:none" />
-        <button onclick="sendAdminMessage()" style="padding:10px 18px;border-radius:10px;border:none;background:var(--coral);color:#fff;font-family:'DM Sans',sans-serif;font-weight:600;font-size:.88rem;cursor:pointer;transition:all .2s;white-space:nowrap">Send ➤</button>
+      <div style="display:flex;gap:8px;margin-top:10px;align-items:flex-end">
+        <textarea id="adminChatInput" placeholder="Type a reply… (Shift+Enter for new line)"
+          rows="3"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAdminMessage()}"
+          oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,160)+'px'"
+          style="flex:1;padding:10px 14px;border-radius:10px;border:1.5px solid rgba(255,255,255,.1);background:#111827;color:#F9FAFB;font-family:'DM Sans',sans-serif;font-size:.88rem;outline:none;resize:none;line-height:1.5;min-height:72px;max-height:160px;transition:border-color .2s"
+          onfocus="this.style.borderColor='rgba(255,87,51,.5)'" onblur="this.style.borderColor='rgba(255,255,255,.1)'"></textarea>
+        <button onclick="sendAdminMessage()" style="padding:10px 18px;border-radius:10px;border:none;background:var(--coral);color:#fff;font-family:'DM Sans',sans-serif;font-weight:600;font-size:.88rem;cursor:pointer;transition:all .2s;white-space:nowrap;flex-shrink:0">Send ➤</button>
       </div>
     </div>
     <div class="modal-actions">
@@ -598,6 +653,7 @@ window.sendAdminMessage = async function() {
   const text  = (input.value || '').trim();
   if (!text || !currentTicketId) return;
   input.value = '';
+  input.style.height = 'auto';
   try {
     await addDoc(collection(db, 'tickets', currentTicketId, 'messages'), {
       text, role: 'admin', senderName: 'Elaborate Support',
