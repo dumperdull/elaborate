@@ -328,12 +328,6 @@
     .mobile-menu.open{display:flex}
   }
 
-  /* ── EMAIL VERIFICATION BANNER ── */
-  .verify-banner{background:linear-gradient(135deg,rgba(167,139,250,.15),rgba(167,139,250,.07));border:1.5px solid rgba(167,139,250,.35);border-radius:14px;padding:13px 18px;margin:16px 48px 0;display:flex;align-items:center;gap:12px;font-size:.85rem;color:var(--navy)}
-  .verify-banner strong{font-weight:700}
-  .verify-banner-btn{margin-left:auto;padding:7px 16px;border-radius:50px;border:none;background:rgba(167,139,250,.25);color:#6D4FBB;font-family:'DM Sans',sans-serif;font-weight:700;font-size:.78rem;cursor:pointer;white-space:nowrap;transition:all .2s;flex-shrink:0}
-  .verify-banner-btn:hover{background:rgba(167,139,250,.4)}
-
   /* ── NOTES WIDGET ── */
   .notes-widget{position:fixed;bottom:28px;right:28px;z-index:150}
   .notes-fab{width:52px;height:52px;border-radius:50%;background:var(--navy);color:#fff;border:none;font-size:1.3rem;cursor:pointer;box-shadow:0 4px 24px rgba(13,27,42,.3);transition:all .25s;display:flex;align-items:center;justify-content:center;position:relative}
@@ -641,21 +635,6 @@
   </div>
 </div>
 
-<!-- EMAIL VERIFY SCREEN -->
-<div id="verify" class="screen" style="background:var(--cream);padding-top:68px;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:120px 24px 80px">
-  <div style="max-width:420px;width:100%">
-    <div style="width:72px;height:72px;border-radius:50%;background:rgba(167,139,250,.12);border:2px solid rgba(167,139,250,.3);display:flex;align-items:center;justify-content:center;font-size:2rem;margin:0 auto 24px">✉️</div>
-    <h2 style="font-family:'Fraunces',serif;font-size:1.8rem;font-weight:900;color:var(--navy);margin-bottom:10px;letter-spacing:-.02em">Check your <em style="color:#A78BFA;font-style:italic">inbox</em></h2>
-    <p style="color:var(--muted);line-height:1.7;font-size:.92rem;margin-bottom:28px">We sent a verification link to <strong id="verifyEmailDisplay"></strong>. Click it to activate your account, then come back here.</p>
-    <div style="display:flex;flex-direction:column;gap:10px">
-      <button onclick="checkVerification()" style="width:100%;padding:13px;border-radius:50px;border:none;background:var(--navy);color:#fff;font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:600;cursor:pointer;transition:all .2s" onmouseover="this.style.background='var(--coral)'" onmouseout="this.style.background='var(--navy)'">I've verified — Continue →</button>
-      <button onclick="resendVerifyEmail()" style="width:100%;padding:13px;border-radius:50px;border:1.5px solid rgba(13,27,42,.12);background:transparent;color:var(--navy);font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .2s">Resend email</button>
-      <button onclick="logout()" style="background:none;border:none;color:var(--muted);font-size:.82rem;cursor:pointer;padding:6px;text-decoration:underline">Sign out</button>
-    </div>
-    <div id="verifyMsg" style="margin-top:16px;font-size:.82rem;color:var(--muted)"></div>
-  </div>
-</div>
-
 <!-- HUB -->
 <div id="hub" class="screen">
   <!-- mobile sidebar toggle -->
@@ -708,12 +687,6 @@
       <svg class="search-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
       <input class="hub-search" type="text" placeholder="Search apps…" oninput="filterApps(this.value)" />
     </div>
-  </div>
-  <div id="verifyBanner" class="verify-banner" style="display:none;margin:16px 40px 0">
-    <span>✉️</span>
-    <span><strong>Verify your email</strong> to secure your account — we sent a link to <span id="verifyBannerEmail"></span></span>
-    <button class="verify-banner-btn" onclick="resendVerifyEmail()">Resend</button>
-    <button onclick="document.getElementById('verifyBanner').style.display='none'" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:.85rem;padding:0 0 0 6px">✕</button>
   </div>
   <div class="hub-tabs" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
     <div style="display:flex;gap:4px">
@@ -1139,7 +1112,7 @@ import { getAuth, createUserWithEmailAndPassword,
          onAuthStateChanged, GoogleAuthProvider,
          signInWithPopup, EmailAuthProvider,
          reauthenticateWithCredential, deleteUser,
-         sendPasswordResetEmail, sendEmailVerification }    from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+         sendPasswordResetEmail }                           from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs, addDoc, serverTimestamp, updateDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const app      = initializeApp(firebaseConfig);
@@ -1260,11 +1233,8 @@ window.doSignup = async function() {
     userProfile.classroomIds = [classRef.id];
     }
     await saveProfile();
-    // Send verification email
-    try { await sendEmailVerification(auth.currentUser); } catch(e) {}
-    // Show verify screen instead of hub
-    document.getElementById('verifyEmailDisplay').textContent = auth.currentUser.email;
-    showScreen('verify');
+    // Show onboarding for brand new users
+    if (!userProfile.onboarded) setTimeout(showOnboarding, 800);
   } catch(e) { authErr(err, firebaseErrMsg(e.code)); }
 };
 
@@ -1394,14 +1364,6 @@ onAuthStateChanged(auth, async (user) => {
       userProfile.email = user.email;
       await saveProfile();
     }
-    // Email verification gate (skip for Google sign-in — already verified)
-    if (!user.emailVerified && user.providerData[0]?.providerId === 'password') {
-      document.getElementById('verifyEmailDisplay').textContent = user.email;
-      document.getElementById('verifyBannerEmail').textContent  = user.email;
-      showScreen('verify');
-      hideSpinner();
-      return;
-    }
     // Check for admin-set suspension reason
     if (userProfile?.suspensionReason) {
       await signOut(auth);
@@ -1448,11 +1410,7 @@ onAuthStateChanged(auth, async (user) => {
     document.getElementById('timerWidget').style.display = 'block';
     loadNotes();
     loadTimerSessions();
-    // Show verify banner if email still unverified (edge case: logged in before checking)
-    if (!user.emailVerified && user.providerData[0]?.providerId === 'password') {
-      document.getElementById('verifyBanner').style.display = 'flex';
-      document.getElementById('verifyBannerEmail').textContent = user.email;
-    }
+
     const heroBtn = document.getElementById('heroMainBtn');
     if (heroBtn) { heroBtn.textContent = 'Open My Hub →'; heroBtn.onclick = () => showScreen('hub'); }
     if (document.getElementById('auth').classList.contains('active')) showScreen('hub');
@@ -2141,11 +2099,7 @@ window.doJoinClassroom = async function() {
     document.getElementById('timerWidget').style.display = 'block';
     loadNotes();
     loadTimerSessions();
-    // Show verify banner if email still unverified (edge case: logged in before checking)
-    if (!user.emailVerified && user.providerData[0]?.providerId === 'password') {
-      document.getElementById('verifyBanner').style.display = 'flex';
-      document.getElementById('verifyBannerEmail').textContent = user.email;
-    }
+
     closeJoinModal();
     document.getElementById('joinCodeInput').value = '';
     showToast('✓ Joined classroom!');
@@ -2239,30 +2193,6 @@ document.addEventListener('DOMContentLoaded', () => {
 /* ════════════════════════════════════
    EMAIL VERIFICATION
 ════════════════════════════════════ */
-window.checkVerification = async function() {
-  const msgEl = document.getElementById('verifyMsg');
-  msgEl.textContent = 'Checking…';
-  try {
-    await auth.currentUser.reload();
-    if (auth.currentUser.emailVerified) {
-      msgEl.textContent = '';
-      // Proceed to hub
-      showScreen('hub');
-      document.getElementById('notesWidget').style.display = 'block';
-      document.getElementById('timerWidget').style.display = 'block';
-      loadNotes(); loadTimerSessions();
-    } else {
-      msgEl.textContent = "Email not verified yet — check your spam folder if you do not see it.";
-    }
-  } catch(e) { msgEl.textContent = 'Error checking. Please try again.'; }
-};
-
-window.resendVerifyEmail = async function() {
-  try {
-    await sendEmailVerification(auth.currentUser);
-    showToast('Verification email resent!');
-  } catch(e) { showToast('Could not resend. Try again in a minute.'); }
-};
 
 /* ════════════════════════════════════
    QUICK NOTES
