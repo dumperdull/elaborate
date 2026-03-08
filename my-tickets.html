@@ -27,12 +27,13 @@
   .page-header p{font-size:.88rem;color:var(--muted);margin-top:4px}
 
   .ticket-list{display:flex;flex-direction:column;gap:12px}
-  .ticket-card{background:var(--card-bg);border-radius:var(--radius);border:1.5px solid rgba(13,27,42,.06);box-shadow:var(--shadow);padding:20px 24px;cursor:pointer;transition:all var(--tr);display:grid;grid-template-columns:1fr auto;gap:12px 20px;align-items:center}
+  .ticket-card{background:var(--card-bg);border-radius:var(--radius);border:1.5px solid rgba(13,27,42,.06);box-shadow:var(--shadow);padding:20px 24px;cursor:pointer;transition:all var(--tr);display:flex;align-items:center;justify-content:space-between;gap:20px}
+  .tc-left{flex:1;min-width:0}
   .ticket-card:hover{box-shadow:0 8px 36px rgba(13,27,42,.14);transform:translateY(-2px);border-color:rgba(255,87,51,.2)}
   .tc-top{display:flex;align-items:center;gap:10px;margin-bottom:6px}
   .tc-subject{font-weight:700;font-size:.97rem;color:var(--navy)}
   .tc-meta{font-size:.78rem;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-  .tc-body-preview{font-size:.82rem;color:var(--muted);margin-top:8px;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tc-body-preview{font-size:.82rem;color:var(--muted);margin-top:8px;line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical}
   .tc-right{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0}
   .status-pill{font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:4px 10px;border-radius:50px;white-space:nowrap}
   .status-pill.open{background:rgba(255,87,51,.1);color:var(--coral)}
