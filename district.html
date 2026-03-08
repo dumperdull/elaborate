@@ -273,7 +273,7 @@
 
         <div id="subStatusCard" class="card" style="margin-bottom:20px"></div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+        <div id="subPricingGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
           <div class="card" style="border:1.5px solid rgba(255,255,255,.1)">
             <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px">Monthly</div>
             <div style="font-family:'Fraunces',serif;font-size:2.2rem;font-weight:900;line-height:1;margin-bottom:4px">$29<span style="font-size:1rem;font-weight:400;color:var(--muted)">/mo</span></div>
@@ -301,8 +301,7 @@
           </div>
         </div>
 
-        <div class="card">
-          <div class="card-title">Need a custom quote?</div>
+        <div id="subCustomQuote" class="card">
           <div class="card-sub">Large districts, multi-school setups, or special requirements? We'll work something out.</div>
           <button class="btn btn-ghost" onclick="window.location.href='mailto:jonnyschoen29@gmail.com?subject=Elaborate District Custom Quote'">📧 Contact Us</button>
         </div>
@@ -692,19 +691,24 @@ window.saveBranding = async function() {
 
 /* ── SUBSCRIPTION ── */
 function renderSubscription() {
-  const sub  = districtData?.subscription || {};
-  const stat = sub.status || 'trial';
-  const card = document.getElementById('subStatusCard');
+  const sub    = districtData?.subscription || {};
+  const stat   = sub.status || 'trial';
+  const isActive = stat === 'active';
+  const card   = document.getElementById('subStatusCard');
+  const pricingGrid = document.getElementById('subPricingGrid');
+  const customQuote = document.getElementById('subCustomQuote');
   const colors = { active:'var(--sage)', trial:'var(--gold)', inactive:'var(--muted)' };
   const labels = { active:'Active', trial:'Free Trial', inactive:'Inactive' };
   card.innerHTML = `
     <div style="display:flex;align-items:center;gap:16px">
-      <div style="font-size:2rem">💳</div>
+      <div style="font-size:2rem">${isActive ? '✅' : '💳'}</div>
       <div>
         <div style="font-weight:700;font-size:.95rem;margin-bottom:4px">Current Plan: <span style="color:${colors[stat]}">${labels[stat]}</span></div>
-        <div style="font-size:.82rem;color:var(--muted);line-height:1.6">${stat==='active'?`Plan: ${sub.plan||'Monthly'} · Renews automatically`:'Your district is on a free trial. Upgrade to unlock all features.'}</div>
+        <div style="font-size:.82rem;color:var(--muted);line-height:1.6">${isActive ? `Plan: ${sub.plan === 'annual' ? 'Annual' : 'Monthly'} · Thank you for supporting Elaborate!` : 'Your district is on a free trial. Upgrade to unlock all features.'}</div>
       </div>
     </div>`;
+  if (pricingGrid) pricingGrid.style.display = isActive ? 'none' : 'grid';
+  if (customQuote) customQuote.style.display = isActive ? 'none' : 'block';
 }
 
 window.contactForPlan = function(plan) {
