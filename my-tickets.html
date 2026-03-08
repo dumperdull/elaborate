@@ -278,7 +278,7 @@ async function renderMessages(messages){
   const t=currentTicket, profiles=await fetchAdminProfiles();
   let html=`<div class="original-block"><div class="original-label">Original message</div><div class="original-body">${esc(t.body||'')} </div></div>`;
   if(!messages.length){
-    html+='<div style="text-align:center;font-size:.84rem;color:var(--muted);padding:28px 20px;line-height:1.7">No replies yet — we'll get back to you soon!</div>';
+    html+='<div style="text-align:center;font-size:.84rem;color:var(--muted);padding:28px 20px;line-height:1.7">No replies yet \u2014 we\u2019ll get back to you soon!</div>';
     container.innerHTML=html; return;
   }
   let lastDate=null,lastSenderId=null,lastRole=null;
