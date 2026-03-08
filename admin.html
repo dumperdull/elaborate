@@ -461,9 +461,12 @@ onAuthStateChanged(auth, user => {
     document.getElementById('adminEmailDisplay').textContent = user.email;
     loadTickets();
   } else if (user) {
-    // Signed in but NOT the admin — boot them out
-    signOut(auth);
-    showLoginError('Access denied. This account is not authorised.');
+    // Signed in as wrong account — sign them out silently and show clear error
+    signOut(auth).then(() => {
+      showLoginError(`Access denied: ${user.email} is not authorised. Please sign in with the admin account.`);
+      document.getElementById('loginScreen').style.display = 'flex';
+      document.getElementById('dashboard').classList.remove('active');
+    });
   } else {
     document.getElementById('loginScreen').style.display    = 'flex';
     document.getElementById('dashboard').classList.remove('active');
@@ -474,12 +477,16 @@ window.doAdminLogin = async function() {
   const email = document.getElementById('adminEmail').value.trim();
   const pass  = document.getElementById('adminPassword').value;
   const btn   = document.getElementById('loginBtn');
+  console.log('[Admin] doAdminLogin called, email:', email);
   if (!email || !pass) return showLoginError('Please enter your email and password.');
   btn.disabled = true;
   btn.textContent = 'Signing in…';
   try {
-    await signInWithEmailAndPassword(auth, email, pass);
+    console.log('[Admin] Calling signInWithEmailAndPassword…');
+    const cred = await signInWithEmailAndPassword(auth, email, pass);
+    console.log('[Admin] signIn success, user:', cred.user.email);
   } catch(e) {
+    console.error('[Admin] signIn error:', e.code, e.message);
     const msgs = {
       'auth/invalid-credential':  'Incorrect email or password.',
       'auth/user-not-found':      'No account found with that email.',
@@ -487,7 +494,7 @@ window.doAdminLogin = async function() {
       'auth/too-many-requests':   'Too many attempts. Try again later.',
       'auth/user-disabled':       'This account has been disabled.',
     };
-    showLoginError(msgs[e.code] || 'Sign in failed. Please try again.');
+    showLoginError(msgs[e.code] || `Sign in failed: ${e.code}`);
     btn.disabled = false;
     btn.textContent = 'Sign In →';
   }
@@ -501,7 +508,7 @@ function showLoginError(msg) {
   const el = document.getElementById('loginError');
   el.textContent = msg;
   el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 5000);
+  setTimeout(() => el.classList.remove('show'), 8000);
 }
 
 // Allow Enter key on login form
