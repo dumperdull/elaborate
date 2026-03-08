@@ -1453,7 +1453,12 @@ onAuthStateChanged(auth, async (user) => {
 
     const heroBtn = document.getElementById('heroMainBtn');
     if (heroBtn) { heroBtn.textContent = 'Open My Hub →'; heroBtn.onclick = () => showScreen('hub'); }
-    if (document.getElementById('auth').classList.contains('active')) showScreen('hub');
+    // Always redirect to hub on login (unless already on hub or settings)
+    const authEl = document.getElementById('auth');
+    const homeEl = document.getElementById('home');
+    if ((authEl && authEl.classList.contains('active')) || (homeEl && homeEl.classList.contains('active'))) {
+      showScreen('hub');
+    }
   } else {
     currentUser = null; userProfile = null;
     applyTheme('default', false);
@@ -2110,7 +2115,7 @@ async function applyClassroomApps() {
 async function applyDistrictApps() {
   if (!userProfile) return;
   const did = userProfile.districtId;
-  if (!did) return;
+  if (!did || typeof did !== 'string' || did.trim() === '') return;
   try {
     const snap = await getDoc(doc(db, 'districts', did));
     if (!snap.exists()) return;
@@ -2132,9 +2137,11 @@ async function applyDistrictApps() {
 }
 
 async function applyDistrictBranding() {
-  if (!userProfile?.districtId) return;
+  if (!userProfile) return;
+  const did = userProfile.districtId;
+  if (!did || typeof did !== 'string' || did.trim() === '') return;
   try {
-    const snap = await getDoc(doc(db, 'districts', userProfile.districtId));
+    const snap = await getDoc(doc(db, 'districts', did));
     if (!snap.exists()) return;
     const b = snap.data().branding || {};
     if (b.primaryColor) {
@@ -2273,15 +2280,16 @@ window.refreshClassroomSettings = async function() {
   const distDesc    = document.getElementById('districtStatusDesc');
   const distLeave   = document.getElementById('districtLeaveBtn');
   const distJoinRow = document.getElementById('districtJoinRow');
-  if (userProfile.districtId) {
+  const did = userProfile.districtId;
+  if (did && typeof did === 'string' && did.trim() !== '') {
     try {
-      const dsnap = await getDoc(doc(db,'districts',userProfile.districtId));
+      const dsnap = await getDoc(doc(db,'districts', did));
       const dname = dsnap.exists() ? (dsnap.data().name || 'District') : 'District';
       if (distTitle) distTitle.textContent = '🏛 ' + dname;
       if (distDesc)  distDesc.textContent  = 'You are a member of this district.';
       if (distLeave) distLeave.style.display = 'inline-flex';
       if (distJoinRow) distJoinRow.style.display = 'none';
-    } catch(e) {}
+    } catch(e) { console.error('district settings fetch error', e); }
   } else {
     if (distTitle)   distTitle.textContent   = 'No District';
     if (distDesc)    distDesc.textContent    = 'Ask your district administrator for a join code.';
