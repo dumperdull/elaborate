@@ -108,15 +108,28 @@
       <div class="form-group"><label>Email Address</label><input type="email" id="ticketEmail" placeholder="you@school.edu" /></div>
       <div class="form-group">
         <label>Category</label>
-        <select id="ticketCategory">
+        <select id="ticketCategory" onchange="handleCategoryChange()">
           <option value="" disabled selected>Select a category…</option>
           <option value="bug">🐛 Bug / Something is broken</option>
           <option value="account">🔐 Account issue</option>
           <option value="feature">💡 Feature request</option>
           <option value="appeal">📋 Account suspension appeal</option>
           <option value="privacy">🔒 Privacy concern</option>
+          <option value="district">🏛 Request a District</option>
           <option value="other">💬 Other</option>
         </select>
+      </div>
+
+      <!-- District request helper — shown only when district category is selected -->
+      <div id="districtHelper" style="display:none;background:linear-gradient(135deg,rgba(244,197,66,.08),rgba(255,87,51,.06));border:1.5px solid rgba(244,197,66,.25);border-radius:14px;padding:18px 20px;margin-bottom:8px">
+        <div style="font-weight:700;color:var(--navy);font-size:.9rem;margin-bottom:8px">📋 What to include in your request</div>
+        <ul style="margin:0;padding-left:18px;font-size:.84rem;color:#4B5563;line-height:1.9">
+          <li>Your district or school name</li>
+          <li>Your role (principal, IT admin, etc.)</li>
+          <li>Estimated number of teachers and students</li>
+          <li>Any specific apps or tools you'd like pinned district-wide</li>
+          <li>Preferred subscription plan (Trial / Monthly / Annual)</li>
+        </ul>
       </div>
       <div class="form-group"><label>Subject</label><input type="text" id="ticketSubject" placeholder="Brief summary of your issue" /></div>
       <div class="form-group"><label>Description</label><textarea id="ticketBody" placeholder="Describe your issue in detail. The more context you give us, the faster we can help."></textarea></div>
@@ -303,6 +316,17 @@ async function checkStatus() {
   time.textContent = 'Checked at ' + new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
 }
 checkStatus();
+
+function handleCategoryChange() {
+  const val = document.getElementById('ticketCategory').value;
+  const helper = document.getElementById('districtHelper');
+  if (helper) helper.style.display = val === 'district' ? 'block' : 'none';
+  // Pre-fill subject for district requests
+  if (val === 'district') {
+    const sub = document.getElementById('ticketSubject');
+    if (sub && !sub.value.trim()) sub.value = 'District account request';
+  }
+}
 </script>
 <script>function toggleFaq(el){el.classList.toggle('open');}</script>
 </body>
