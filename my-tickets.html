@@ -67,23 +67,27 @@
   .modal-close:hover{background:rgba(255,87,51,.12);color:var(--coral)}
 
   /* Chat messages */
-  .chat-messages{flex:1;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:14px}
+  .chat-messages{flex:1;overflow-y:auto;padding:12px 0;display:flex;flex-direction:column;background:#fff}
   .chat-messages::-webkit-scrollbar{width:4px}.chat-messages::-webkit-scrollbar-track{background:transparent}.chat-messages::-webkit-scrollbar-thumb{background:rgba(13,27,42,.12);border-radius:4px}
 
   /* Original ticket body */
-  .original-message{background:rgba(13,27,42,.04);border:1.5px solid rgba(13,27,42,.07);border-radius:14px;padding:16px 18px}
+  .original-message{background:rgba(13,27,42,.04);border:1.5px solid rgba(13,27,42,.07);border-radius:14px;padding:16px 18px;margin:12px 20px}
   .original-label{font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
-  .original-body{font-size:.9rem;color:var(--text);line-height:1.7}
+  .original-body{font-size:.9rem;color:var(--text);line-height:1.7;white-space:pre-wrap}
 
-  /* Message bubbles */
-  .msg{display:flex;flex-direction:column;max-width:80%}
-  .msg.user{align-self:flex-end;align-items:flex-end}
-  .msg.admin{align-self:flex-start;align-items:flex-start}
-  .msg-bubble{padding:12px 16px;border-radius:18px;font-size:.9rem;line-height:1.6}
-  .msg.user .msg-bubble{background:var(--navy);color:#fff;border-bottom-right-radius:4px}
-  .msg.admin .msg-bubble{background:rgba(255,87,51,.1);color:var(--text);border-bottom-left-radius:4px;border:1.5px solid rgba(255,87,51,.15)}
-  .msg-sender{font-size:.7rem;font-weight:700;color:var(--muted);margin-bottom:4px;letter-spacing:.04em}
-  .msg-time{font-size:.67rem;color:var(--muted);margin-top:4px}
+  /* Discord-style message groups */
+  .msg-group{display:flex;gap:14px;padding:6px 20px;transition:background .1s}
+  .msg-group:hover{background:rgba(13,27,42,.025)}
+  .msg-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:900;font-size:.95rem;color:#fff;flex-shrink:0;overflow:hidden;margin-top:2px}
+  .msg-avatar img{width:100%;height:100%;object-fit:cover}
+  .msg-body{flex:1;min-width:0}
+  .msg-header{display:flex;align-items:baseline;gap:8px;margin-bottom:3px}
+  .msg-name{font-weight:700;font-size:.9rem}
+  .msg-name.is-staff{color:var(--coral)}
+  .msg-name.is-user{color:var(--navy)}
+  .msg-staff-badge{font-size:.6rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;background:rgba(255,87,51,.12);color:var(--coral);border:1px solid rgba(255,87,51,.2);padding:1px 6px;border-radius:4px}
+  .msg-timestamp{font-size:.7rem;color:var(--muted)}
+  .msg-line{font-size:.9rem;line-height:1.6;color:var(--text);padding:1px 0;white-space:pre-wrap;word-break:break-word}
 
   /* Chat input */
   .chat-input-wrap{padding:16px 24px;border-top:1.5px solid rgba(13,27,42,.07);display:flex;gap:10px;flex-shrink:0;align-items:flex-end}
@@ -161,7 +165,7 @@ const firebaseConfig = {
 import { initializeApp }                              from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, onAuthStateChanged }                from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { getFirestore, collection, query, where,
-         orderBy, onSnapshot, addDoc,
+         orderBy, onSnapshot, addDoc, getDocs,
          serverTimestamp, doc }                       from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const app  = initializeApp(firebaseConfig);
@@ -171,6 +175,23 @@ const db   = getFirestore(app);
 let currentUser    = null;
 let currentTicket  = null;
 let unsubMessages  = null;
+let adminProfiles  = null; // cached { uid: {displayName, avatarUrl} }
+
+const ADMIN_COLORS = ['#FF5733','#F4C542','#7DBE8E','#A78BFA','#38BDF8','#F472B6','#FB923C'];
+function adminColor(uid) {
+  let h = 0; for (const c of (uid||'')) h = (Math.imul(31,h)+c.charCodeAt(0))|0;
+  return ADMIN_COLORS[Math.abs(h) % ADMIN_COLORS.length];
+}
+
+async function fetchAdminProfiles() {
+  if (adminProfiles) return adminProfiles;
+  adminProfiles = {};
+  try {
+    const snap = await getDocs(collection(db, 'admins'));
+    snap.docs.forEach(d => { adminProfiles[d.id] = d.data(); });
+  } catch(e) { console.warn('could not load admin profiles', e); }
+  return adminProfiles;
+}
 
 onAuthStateChanged(auth, user => {
   if (!user) {
@@ -270,23 +291,80 @@ window.openTicket = function(t) {
   });
 };
 
-function renderMessages(messages) {
+async function renderMessages(messages) {
   const container = document.getElementById('chatMessages');
   const t = currentTicket;
+  const profiles = await fetchAdminProfiles();
+
+  // Original message block
   let html = `<div class="original-message">
     <div class="original-label">Original message</div>
     <div class="original-body">${esc(t.body||'')}</div>
   </div>`;
+
+  if (messages.length === 0) {
+    container.innerHTML = html + `<div style="text-align:center;font-size:.82rem;color:var(--muted);padding:24px 20px">No replies yet — we'll get back to you soon!</div>`;
+    return;
+  }
+
+  // Group consecutive messages from same sender
+  const groups = [];
   messages.forEach(m => {
-    const isUser  = m.role === 'user';
-    const time    = m.createdAt?.toDate ? m.createdAt.toDate().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '';
-    const sender  = isUser ? (t.firstName||'You') : 'Elaborate Support';
-    html += `<div class="msg ${isUser ? 'user' : 'admin'}">
-      <div class="msg-sender">${esc(sender)}</div>
-      <div class="msg-bubble">${esc(m.text||'')}</div>
-      <div class="msg-time">${time}</div>
+    const senderId = m.senderId || (m.role === 'admin' ? 'admin' : m.uid || 'user');
+    const last = groups[groups.length - 1];
+    if (last && last.role === m.role && last.senderId === senderId) {
+      last.messages.push(m);
+    } else {
+      groups.push({ role: m.role, senderId, senderName: m.senderName, messages: [m] });
+    }
+  });
+
+  groups.forEach(g => {
+    const isAdmin = g.role === 'admin';
+    const firstMsg = g.messages[0];
+    const time = firstMsg.createdAt?.toDate
+      ? firstMsg.createdAt.toDate().toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})
+      : '';
+
+    let displayName, avatarUrl, nameColor;
+    if (isAdmin) {
+      const profile = profiles[g.senderId] || {};
+      displayName = profile.displayName || g.senderName || 'Support';
+      avatarUrl   = profile.avatarUrl   || '';
+      nameColor   = adminColor(g.senderId);
+    } else {
+      displayName = g.senderName || t.firstName || 'You';
+      avatarUrl   = '';
+      nameColor   = 'var(--navy)';
+    }
+
+    const initial = displayName[0]?.toUpperCase() || '?';
+    const avatarBg = isAdmin ? nameColor : 'var(--navy)';
+    const avatarHtml = avatarUrl
+      ? `<img src="${esc(avatarUrl)}" alt="" onerror="this.style.display='none';this.nextSibling.style.display='flex'" style="width:100%;height:100%;object-fit:cover"><span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;background:${avatarBg};color:#fff;font-family:'Fraunces',serif;font-weight:900;font-size:.95rem">${initial}</span>`
+      : initial;
+
+    const msgLines = g.messages.map(m =>
+      `<div class="msg-line">${esc(m.text||'')}</div>`
+    ).join('');
+
+    const staffBadge = isAdmin
+      ? `<span class="msg-staff-badge">STAFF</span>`
+      : '';
+
+    html += `<div class="msg-group">
+      <div class="msg-avatar" style="background:${avatarBg}">${avatarHtml}</div>
+      <div class="msg-body">
+        <div class="msg-header">
+          <span class="msg-name ${isAdmin ? 'is-staff' : 'is-user'}" style="${isAdmin ? `color:${nameColor}` : ''}">${esc(displayName)}</span>
+          ${staffBadge}
+          <span class="msg-timestamp">${time}</span>
+        </div>
+        ${msgLines}
+      </div>
     </div>`;
   });
+
   container.innerHTML = html;
   container.scrollTop = container.scrollHeight;
 }
