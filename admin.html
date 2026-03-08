@@ -445,13 +445,40 @@
     <!-- CHAT THREAD -->
     <div class="modal-field">
       <div class="modal-field-label">Conversation</div>
-      <div id="adminChatMessages" style="max-height:320px;overflow-y:auto;display:flex;flex-direction:column;background:#111827;border-radius:12px;margin-top:4px;padding:8px 0"></div>
-      <div style="display:flex;gap:8px;margin-top:8px;align-items:flex-end;background:#1a2538;border:1.5px solid rgba(255,255,255,.08);border-radius:12px;padding:8px">
-        <textarea id="adminChatInput" placeholder="Message… (Enter to send, Shift+Enter for new line)"
-          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAdminMessage();}"
-          oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,160)+'px'"
-          style="flex:1;padding:6px 4px;border:none;background:transparent;color:#F9FAFB;font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;resize:none;line-height:1.55;min-height:36px;max-height:160px"></textarea>
-        <button onclick="sendAdminMessage()" style="padding:8px 16px;border-radius:8px;border:none;background:var(--coral);color:#fff;font-family:'DM Sans',sans-serif;font-weight:700;font-size:.82rem;cursor:pointer;transition:all .2s;white-space:nowrap;flex-shrink:0;margin-bottom:2px" onmouseover="this.style.background='#e84d2e'" onmouseout="this.style.background='var(--coral)'">Send</button>
+      <div id="adminChatMessages" style="max-height:340px;overflow-y:auto;display:flex;flex-direction:column;background:#111827;border-radius:12px;margin-top:4px;padding:8px 0"></div>
+
+      <!-- Tab bar: Reply / Internal Note -->
+      <div style="display:flex;gap:0;margin-top:10px;border-bottom:1.5px solid rgba(255,255,255,.07)">
+        <button id="tabReplyBtn" onclick="switchChatTab('reply')" style="font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:700;padding:8px 16px;border:none;background:transparent;color:rgba(255,255,255,.9);cursor:pointer;border-bottom:2px solid var(--coral);margin-bottom:-1.5px;transition:all .2s">💬 Reply</button>
+        <button id="tabNoteBtn"  onclick="switchChatTab('note')"  style="font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:700;padding:8px 16px;border:none;background:transparent;color:rgba(255,255,255,.4);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1.5px;transition:all .2s">🔒 Internal Note</button>
+      </div>
+
+      <!-- Reply input -->
+      <div id="chatTabReply" style="margin-top:8px">
+        <!-- Canned responses -->
+        <div style="margin-bottom:8px">
+          <div style="font-size:.65rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:6px">Quick Replies</div>
+          <div id="cannedList" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:flex-end;background:#1a2538;border:1.5px solid rgba(255,255,255,.08);border-radius:12px;padding:8px">
+          <textarea id="adminChatInput" placeholder="Reply to user… (Enter to send, Shift+Enter for new line)"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAdminMessage();}"
+            oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,160)+'px'"
+            style="flex:1;padding:6px 4px;border:none;background:transparent;color:#F9FAFB;font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;resize:none;line-height:1.55;min-height:36px;max-height:160px"></textarea>
+          <button onclick="sendAdminMessage()" style="padding:8px 16px;border-radius:8px;border:none;background:var(--coral);color:#fff;font-family:'DM Sans',sans-serif;font-weight:700;font-size:.82rem;cursor:pointer;transition:all .2s;white-space:nowrap;flex-shrink:0;margin-bottom:2px" onmouseover="this.style.background='#e84d2e'" onmouseout="this.style.background='var(--coral)'">Send</button>
+        </div>
+      </div>
+
+      <!-- Internal note input -->
+      <div id="chatTabNote" style="display:none;margin-top:8px">
+        <div style="background:rgba(244,197,66,.06);border:1.5px solid rgba(244,197,66,.2);border-radius:10px;padding:8px 12px;margin-bottom:8px;font-size:.78rem;color:rgba(244,197,66,.7)">🔒 Internal notes are only visible to staff — the user will never see this.</div>
+        <div style="display:flex;gap:8px;align-items:flex-end;background:#1a1f2e;border:1.5px solid rgba(244,197,66,.2);border-radius:12px;padding:8px">
+          <textarea id="adminNoteInput" placeholder="Add a private note… (Enter to send)"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendInternalNote();}"
+            oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"
+            style="flex:1;padding:6px 4px;border:none;background:transparent;color:#F9FAFB;font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;resize:none;line-height:1.55;min-height:36px;max-height:120px"></textarea>
+          <button onclick="sendInternalNote()" style="padding:8px 16px;border-radius:8px;border:none;background:rgba(244,197,66,.2);color:var(--gold);border:1.5px solid rgba(244,197,66,.3);font-family:'DM Sans',sans-serif;font-weight:700;font-size:.82rem;cursor:pointer;transition:all .2s;white-space:nowrap;flex-shrink:0;margin-bottom:2px">Add Note</button>
+        </div>
       </div>
     </div>
     <div class="modal-actions">
@@ -799,38 +826,43 @@ window.openTicket = function(docId) {
       return;
     }
 
-    // Fetch admin profiles for avatar/name rendering
+    // Fetch admin profiles
     const adminProfiles = {};
     try {
       const adminSnap = await getDocs(collection(db, 'admins'));
       adminSnap.docs.forEach(d => { adminProfiles[d.id] = d.data(); });
     } catch(e) {}
 
-    // Group consecutive messages from the same sender (Discord-style)
+    // Group consecutive messages from same sender+role (skip grouping across note/non-note boundary)
     const groups = [];
     msgs.forEach(m => {
+      const isNote = m.internal === true;
       const last = groups[groups.length - 1];
-      if (last && last.role === m.role && last.senderId === (m.senderId || m.role)) {
+      const sameGroup = last &&
+        last.role === m.role &&
+        last.senderId === (m.senderId || m.role) &&
+        last.isNote === isNote;
+      if (sameGroup) {
         last.messages.push(m);
       } else {
-        groups.push({ role: m.role, senderId: m.senderId || m.role, senderName: m.senderName, messages: [m] });
+        groups.push({ role: m.role, senderId: m.senderId || m.role, senderName: m.senderName, isNote, messages: [m] });
       }
     });
 
     container.innerHTML = groups.map(g => {
       const isAdmin = g.role === 'admin';
+      const isNote  = g.isNote;
       const firstMsg = g.messages[0];
       const time = firstMsg.createdAt?.toDate
         ? firstMsg.createdAt.toDate().toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})
         : '';
 
-      // Resolve name and avatar
       let displayName, avatarUrl, nameColor;
       if (isAdmin) {
         const profile = adminProfiles[g.senderId] || {};
         displayName = profile.displayName || g.senderName || 'Support';
         avatarUrl   = profile.avatarUrl   || '';
-        nameColor   = adminColor(g.senderId);
+        nameColor   = isNote ? '#F4C542' : adminColor(g.senderId);
       } else {
         displayName = g.senderName || 'User';
         avatarUrl   = '';
@@ -838,37 +870,39 @@ window.openTicket = function(docId) {
       }
 
       const initial = displayName[0]?.toUpperCase() || '?';
-      const avatarHtml = avatarUrl
+      const avatarBg = isNote ? 'rgba(244,197,66,.25)' : (isAdmin ? nameColor : '#334155');
+      const avatarHtml = avatarUrl && !isNote
         ? `<img src="${escHtml(avatarUrl)}" style="width:38px;height:38px;border-radius:50%;object-fit:cover;flex-shrink:0" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" /><div style="display:none;width:38px;height:38px;border-radius:50%;background:${nameColor};align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:900;font-size:.95rem;color:#fff;flex-shrink:0">${initial}</div>`
-        : `<div style="width:38px;height:38px;border-radius:50%;background:${isAdmin ? nameColor : '#334155'};display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:900;font-size:.95rem;color:#fff;flex-shrink:0">${initial}</div>`;
+        : `<div style="width:38px;height:38px;border-radius:50%;background:${avatarBg};display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:900;font-size:${isNote?'1rem':'.95rem'};color:${isNote?'#F4C542':'#fff'};flex-shrink:0">${isNote?'🔒':initial}</div>`;
 
       const msgLines = g.messages.map(m => {
-        const mTime = m.createdAt?.toDate
-          ? m.createdAt.toDate().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})
-          : '';
-        // Preserve newlines and escape HTML
         const safeText = escHtml(m.text || '').replace(/\n/g, '<br>');
-        return `<div style="position:relative;padding:1px 0;line-height:1.55;font-size:.9rem;color:#D1D5DB" class="chat-msg-line">
-          <span class="msg-timestamp" style="display:none;font-size:.65rem;color:rgba(255,255,255,.25);position:absolute;left:-44px;top:3px;white-space:nowrap">${mTime}</span>
-          ${safeText}
-        </div>`;
+        return `<div style="padding:1px 0;line-height:1.55;font-size:.9rem;color:${isNote?'rgba(244,197,66,.85)':'#D1D5DB'}">${safeText}</div>`;
       }).join('');
 
-      return `<div style="display:flex;gap:14px;padding:10px 16px;transition:background .1s" class="chat-group" onmouseover="this.style.background='rgba(255,255,255,.03)'" onmouseout="this.style.background='transparent'">
+      const noteBadge = isNote ? '<span style="font-size:.58rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:rgba(244,197,66,.15);color:#F4C542;border:1px solid rgba(244,197,66,.25);padding:1px 5px;border-radius:3px;margin-left:4px">INTERNAL</span>' : '';
+      const staffBadge = isAdmin && !isNote ? '<span style="font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:rgba(255,87,51,.2);color:var(--coral);padding:1px 6px;border-radius:4px">STAFF</span>' : '';
+      const rowBg = isNote ? 'rgba(244,197,66,.04)' : 'transparent';
+      const rowBorder = isNote ? 'border-left:2px solid rgba(244,197,66,.25);margin-left:4px;padding-left:12px' : '';
+
+      return `<div style="display:flex;gap:14px;padding:10px 16px;transition:background .1s;background:${rowBg};${rowBorder}" onmouseover="this.style.background='${isNote?'rgba(244,197,66,.07)':'rgba(255,255,255,.03)'}'" onmouseout="this.style.background='${rowBg}'">
         <div style="flex-shrink:0;padding-top:2px">${avatarHtml}</div>
         <div style="flex:1;min-width:0">
-          <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">
+          <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:4px;flex-wrap:wrap">
             <span style="font-weight:700;font-size:.9rem;color:${nameColor}">${escHtml(displayName)}</span>
-            ${isAdmin ? '<span style="font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:rgba(255,87,51,.2);color:var(--coral);padding:1px 6px;border-radius:4px">STAFF</span>' : ''}
+            ${staffBadge}${noteBadge}
             <span style="font-size:.72rem;color:rgba(255,255,255,.25)">${time}</span>
           </div>
-          <div style="position:relative">${msgLines}</div>
+          ${msgLines}
         </div>
       </div>`;
     }).join('');
 
     container.scrollTop = container.scrollHeight;
   });
+
+  // Populate canned responses
+  renderCannedResponses();
 };
 
 window.closeModal = function() {
@@ -933,20 +967,88 @@ window.deleteCurrentTicket = async function() {
 ════════════════════════ */
 window.sendAdminMessage = async function() {
   const input = document.getElementById('adminChatInput');
-  const text  = input.value;
-  // Allow newlines but reject truly empty messages
-  if (!text.trim() || !currentTicketId) return;
+  const text  = input?.value;
+  if (!text?.trim() || !currentTicketId) return;
   input.value = '';
   input.style.height = 'auto';
   try {
     await addDoc(collection(db, 'tickets', currentTicketId, 'messages'), {
       text,
-      role:        'admin',
-      senderId:    currentAdmin?.uid    || 'admin',
-      senderName:  currentAdmin?.displayName || 'Support',
-      createdAt:   serverTimestamp()
+      role:       'admin',
+      internal:   false,
+      senderId:   currentAdmin?.uid       || 'admin',
+      senderName: currentAdmin?.displayName || 'Support',
+      createdAt:  serverTimestamp()
     });
   } catch(e) { console.error(e); }
+};
+
+window.sendInternalNote = async function() {
+  const input = document.getElementById('adminNoteInput');
+  const text  = input?.value;
+  if (!text?.trim() || !currentTicketId) return;
+  input.value = '';
+  input.style.height = 'auto';
+  try {
+    await addDoc(collection(db, 'tickets', currentTicketId, 'messages'), {
+      text,
+      role:       'admin',
+      internal:   true,
+      senderId:   currentAdmin?.uid       || 'admin',
+      senderName: currentAdmin?.displayName || 'Support',
+      createdAt:  serverTimestamp()
+    });
+    showToast('Internal note saved.');
+  } catch(e) { console.error(e); }
+};
+
+/* Chat tab switcher */
+window.switchChatTab = function(tab) {
+  const replyDiv = document.getElementById('chatTabReply');
+  const noteDiv  = document.getElementById('chatTabNote');
+  const replyBtn = document.getElementById('tabReplyBtn');
+  const noteBtn  = document.getElementById('tabNoteBtn');
+  if (!replyDiv || !noteDiv) return;
+  const onReply = tab === 'reply';
+  replyDiv.style.display = onReply ? 'block' : 'none';
+  noteDiv.style.display  = onReply ? 'none'  : 'block';
+  replyBtn.style.color          = onReply ? 'rgba(255,255,255,.9)' : 'rgba(255,255,255,.4)';
+  replyBtn.style.borderBottomColor = onReply ? 'var(--coral)' : 'transparent';
+  noteBtn.style.color           = onReply ? 'rgba(255,255,255,.4)' : '#F4C542';
+  noteBtn.style.borderBottomColor  = onReply ? 'transparent' : '#F4C542';
+};
+
+/* Canned responses */
+const CANNED_RESPONSES = [
+  { label: '👋 Greeting',      text: "Hi! Thanks for reaching out to Elaborate support. I'm happy to help — could you give me a bit more detail about the issue you're experiencing?" },
+  { label: '✅ Resolved',      text: "Great news — this should now be resolved on our end! Please let us know if you run into anything else. We're always happy to help." },
+  { label: '⏳ Looking into it', text: "Thanks for your patience! I'm looking into this now and will follow up as soon as I have more information." },
+  { label: '🔁 Try again',     text: "Could you try signing out and back in, then let me know if the issue persists? That resolves most account-related hiccups." },
+  { label: '📋 Need more info', text: "To help you better, could you share a bit more detail? Specifically: what page were you on, and what exactly happened (or didn't happen)?" },
+  { label: '🏛 District info',  text: "For district setup, please submit a ticket under the \"Request a District\" category and we'll get your account configured within 1–2 business days." },
+];
+
+function renderCannedResponses() {
+  const wrap = document.getElementById('cannedList');
+  if (!wrap) return;
+  wrap.innerHTML = CANNED_RESPONSES.map(r =>
+    `<button onclick="insertCanned(${JSON.stringify(r.text)})"
+      style="font-family:'DM Sans',sans-serif;font-size:.72rem;font-weight:600;padding:4px 10px;border-radius:50px;border:1.5px solid rgba(255,255,255,.1);background:transparent;color:rgba(255,255,255,.55);cursor:pointer;transition:all .15s;white-space:nowrap"
+      onmouseover="this.style.borderColor='var(--coral)';this.style.color='var(--coral)'"
+      onmouseout="this.style.borderColor='rgba(255,255,255,.1)';this.style.color='rgba(255,255,255,.55)'"
+    >${r.label}</button>`
+  ).join('');
+}
+
+window.insertCanned = function(text) {
+  // Make sure we're on the Reply tab
+  switchChatTab('reply');
+  const input = document.getElementById('adminChatInput');
+  if (!input) return;
+  input.value = text;
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 160) + 'px';
+  input.focus();
 };
 
 window.replyEmail = function(e, email, subject, ticketId) {
