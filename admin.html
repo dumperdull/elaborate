@@ -1031,8 +1031,9 @@ const CANNED_RESPONSES = [
 function renderCannedResponses() {
   const wrap = document.getElementById('cannedList');
   if (!wrap) return;
-  wrap.innerHTML = CANNED_RESPONSES.map(r =>
-    `<button onclick="insertCanned(${JSON.stringify(r.text)})"
+  // Use index to avoid quote-escaping issues inside onclick attributes
+  wrap.innerHTML = CANNED_RESPONSES.map((r, i) =>
+    `<button onclick="insertCanned(${i})"
       style="font-family:'DM Sans',sans-serif;font-size:.72rem;font-weight:600;padding:4px 10px;border-radius:50px;border:1.5px solid rgba(255,255,255,.1);background:transparent;color:rgba(255,255,255,.55);cursor:pointer;transition:all .15s;white-space:nowrap"
       onmouseover="this.style.borderColor='var(--coral)';this.style.color='var(--coral)'"
       onmouseout="this.style.borderColor='rgba(255,255,255,.1)';this.style.color='rgba(255,255,255,.55)'"
@@ -1040,12 +1041,13 @@ function renderCannedResponses() {
   ).join('');
 }
 
-window.insertCanned = function(text) {
-  // Make sure we're on the Reply tab
+window.insertCanned = function(index) {
+  const r = CANNED_RESPONSES[index];
+  if (!r) return;
   switchChatTab('reply');
   const input = document.getElementById('adminChatInput');
   if (!input) return;
-  input.value = text;
+  input.value = r.text;
   input.style.height = 'auto';
   input.style.height = Math.min(input.scrollHeight, 160) + 'px';
   input.focus();
