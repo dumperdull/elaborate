@@ -1681,6 +1681,8 @@ function populateSettings() {
   document.querySelectorAll('.theme-swatch').forEach(sw => sw.classList.remove('active'));
   const active = document.getElementById('swatch-'+(s.theme||'default'));
   if (active) active.classList.add('active');
+  // Always refresh classroom + district status
+  refreshClassroomSettings();
 }
 
 window.applyTheme = function(theme, save = true) {
@@ -2044,6 +2046,7 @@ window.createNewClassroom = async function() {
       joinCode:     code,
       pinnedApps:   [],
       lockedAppIds: [],
+      districtId:   userProfile.districtId || null,
       createdAt:    serverTimestamp()
     });
     showToast(`✓ "${name.trim()}" created! Join code: ${code}`);
@@ -2114,7 +2117,19 @@ async function applyClassroomApps() {
 ════════════════════════════════════ */
 async function applyDistrictApps() {
   if (!userProfile) return;
-  const did = userProfile.districtId;
+  let did = userProfile.districtId;
+  if (!did || typeof did !== 'string' || did.trim() === '') {
+    // Students inherit district from their classroom's teacher
+    if (userProfile.role !== 'teacher') {
+      const ids = getClassroomIds();
+      for (const cid of ids) {
+        try {
+          const cls = loadedClassrooms[cid] || (await getDoc(doc(db,'classrooms',cid))).data();
+          if (cls?.districtId) { did = cls.districtId; break; }
+        } catch(e) {}
+      }
+    }
+  }
   if (!did || typeof did !== 'string' || did.trim() === '') return;
   try {
     const snap = await getDoc(doc(db, 'districts', did));
@@ -2129,7 +2144,6 @@ async function applyDistrictApps() {
         userProfile.nextId = Math.max(userProfile.nextId||9, Number(a.id||0)+1);
       }
     });
-    // Enforce locks on already-present apps
     userProfile.apps = userProfile.apps.map(a => ({
       ...a, locked: lockedIds.includes(a.id) ? true : a.locked
     }));
@@ -2138,11 +2152,20 @@ async function applyDistrictApps() {
 
 async function applyDistrictBranding() {
   if (!userProfile) return;
-  const did = userProfile.districtId;
+  let did = userProfile.districtId;
+  if (!did || typeof did !== 'string' || did.trim() === '') {
+    // Students inherit branding from their classroom's district
+    if (userProfile.role !== 'teacher') {
+      const ids = getClassroomIds();
+      for (const cid of ids) {
+        try {
+          const cls = loadedClassrooms[cid] || (await getDoc(doc(db,'classrooms',cid))).data();
+          if (cls?.districtId) { did = cls.districtId; break; }
+        } catch(e) {}
+      }
+    }
+  }
   if (!did || typeof did !== 'string' || did.trim() === '') return;
-  try {
-    const snap = await getDoc(doc(db, 'districts', did));
-    if (!snap.exists()) return;
     const b = snap.data().branding || {};
     if (b.primaryColor) {
       document.documentElement.style.setProperty('--coral', b.primaryColor);
@@ -2192,6 +2215,7 @@ window.doJoinDistrict = async function() {
     await applyDistrictBranding();
     await applyDistrictApps();
     renderApps();
+    await refreshClassroomSettings();
     showToast('✓ Joined district!');
     const inp = document.getElementById('districtCodeInput');
     if (inp) inp.value = '';
@@ -2204,8 +2228,14 @@ window.doLeaveDistrict = async function() {
   userProfile.apps       = (userProfile.apps||[]).filter(a => !a.fromDistrict);
   userProfile.districtId = null;
   await saveProfile();
+  // Reset branding back to defaults
   document.documentElement.style.removeProperty('--coral');
+  const logoText = document.getElementById('navLogoText');
+  const logoImg  = document.getElementById('navLogoImg');
+  if (logoText) logoText.textContent = 'Elaborate';
+  if (logoImg)  { logoImg.src = ''; logoImg.style.display = 'none'; }
   showToast('Left district.');
+  await refreshClassroomSettings();
   await buildSidebar();
   renderApps();
 };
@@ -2238,6 +2268,8 @@ window.doJoinClassroom = async function() {
     userProfile.role = 'student';
     await saveProfile();
     await applyClassroomApps();
+    await applyDistrictApps();
+    await applyDistrictBranding();
     await buildSidebar();
     renderApps();
     // Show floating widgets
@@ -2245,7 +2277,6 @@ window.doJoinClassroom = async function() {
     document.getElementById('timerWidget').style.display = 'block';
     loadNotes();
     loadTimerSessions();
-
     closeJoinModal();
     document.getElementById('joinCodeInput').value = '';
     showToast('✓ Joined classroom!');
@@ -2255,26 +2286,41 @@ window.doJoinClassroom = async function() {
 window.refreshClassroomSettings = async function() {
   if (!userProfile) return;
   const role        = userProfile.role || 'student';
+  const classroomIds = getClassroomIds();
+  const inClassroom  = classroomIds.length > 0;
   const roleDesc    = document.getElementById('classroomRoleDesc');
   const roleBtn     = document.getElementById('classroomRoleBtn');
   const codeRow     = document.getElementById('classroomCodeRow');
   const joinRow     = document.getElementById('joinClassroomRow');
+  const leaveRow    = document.getElementById('leaveClassroomRow');
   const codeDisplay = document.getElementById('classroomCodeDisplay');
-  if (roleDesc)  roleDesc.textContent  = role === 'teacher' ? '🍎 You are a Teacher' : '🎒 You are a Student';
-  if (roleBtn)   { roleBtn.style.display = role === 'teacher' ? 'none' : 'inline-flex'; roleBtn.textContent = 'Switch to Teacher'; }
-  if (codeRow)   codeRow.style.display  = role === 'teacher' ? 'flex' : 'none';
-  if (joinRow)   joinRow.style.display  = (role === 'student' && !userProfile.classroomId) ? 'flex' : 'none';
-  const leaveRow  = document.getElementById('leaveClassroomRow');
-  const leaveDesc = document.getElementById('leaveClassroomDesc');
-  if (leaveRow)  leaveRow.style.display  = (role === 'student' && !!userProfile.classroomId) ? 'flex' : 'none';
-  if (role === 'teacher' && userProfile.classroomId && codeDisplay) {
-    try {
-      const snap = await getDoc(doc(db, 'classrooms', userProfile.classroomId));
-      codeDisplay.textContent = snap.exists() ? (snap.data().joinCode || '—') : 'Not found';
-    } catch(e) { codeDisplay.textContent = 'Error loading'; }
-  } else if (codeDisplay) {
-    codeDisplay.textContent = '—';
+
+  if (roleDesc) roleDesc.textContent = role === 'teacher' ? '🍎 You are a Teacher' : '🎒 You are a Student';
+  if (roleBtn)  { roleBtn.style.display = role === 'teacher' ? 'none' : 'inline-flex'; roleBtn.textContent = 'Switch to Teacher'; }
+
+  // Teacher: show classroom dashboard link and first join code
+  if (codeRow) codeRow.style.display = role === 'teacher' ? 'flex' : 'none';
+  if (role === 'teacher' && codeDisplay) {
+    if (userProfile.classroomId) {
+      try {
+        const snap = await getDoc(doc(db, 'classrooms', userProfile.classroomId));
+        codeDisplay.textContent = snap.exists() ? (snap.data().joinCode || '—') : 'Not found';
+      } catch(e) { codeDisplay.textContent = 'Error loading'; }
+    } else {
+      codeDisplay.textContent = '—';
+    }
   }
+
+  // Student: show join row if not in any classroom, leave row if in one
+  if (joinRow)  joinRow.style.display  = (role === 'student' && !inClassroom) ? 'flex' : 'none';
+  if (leaveRow) leaveRow.style.display = (role === 'student' && inClassroom)  ? 'flex' : 'none';
+  if (leaveRow && inClassroom) {
+    const leaveDesc = document.getElementById('leaveClassroomDesc');
+    if (leaveDesc) leaveDesc.textContent = classroomIds.length > 1
+      ? `You are enrolled in ${classroomIds.length} classrooms.`
+      : 'You are currently enrolled in a classroom.';
+  }
+
   // District status
   const distTitle   = document.getElementById('districtStatusTitle');
   const distDesc    = document.getElementById('districtStatusDesc');
@@ -2291,10 +2337,30 @@ window.refreshClassroomSettings = async function() {
       if (distJoinRow) distJoinRow.style.display = 'none';
     } catch(e) { console.error('district settings fetch error', e); }
   } else {
-    if (distTitle)   distTitle.textContent   = 'No District';
-    if (distDesc)    distDesc.textContent    = 'Ask your district administrator for a join code.';
-    if (distLeave)   distLeave.style.display = 'none';
-    if (distJoinRow) distJoinRow.style.display = 'flex';
+    // Check if student inherits district via their classroom's teacher
+    let inheritedName = null;
+    if (role === 'student' && inClassroom) {
+      try {
+        for (const cid of classroomIds) {
+          const cls = loadedClassrooms[cid] || (await getDoc(doc(db,'classrooms',cid))).data();
+          if (cls?.districtId) { 
+            const dsnap = await getDoc(doc(db,'districts',cls.districtId));
+            if (dsnap.exists()) { inheritedName = dsnap.data().name || 'District'; break; }
+          }
+        }
+      } catch(e) {}
+    }
+    if (inheritedName) {
+      if (distTitle) distTitle.textContent = '🏛 ' + inheritedName;
+      if (distDesc)  distDesc.textContent  = 'District membership inherited from your classroom.';
+      if (distLeave) distLeave.style.display = 'none';
+      if (distJoinRow) distJoinRow.style.display = 'none';
+    } else {
+      if (distTitle)   distTitle.textContent   = 'No District';
+      if (distDesc)    distDesc.textContent    = 'Ask your district administrator for a join code.';
+      if (distLeave)   distLeave.style.display = 'none';
+      if (distJoinRow) distJoinRow.style.display = 'flex';
+    }
   }
 };
 
@@ -2309,6 +2375,7 @@ window.toggleTeacherRole = async function() {
     joinCode:    code,
     pinnedApps:  [],
     lockedAppIds:[],
+    districtId:  userProfile.districtId || null,
     createdAt:   serverTimestamp()
   });
   userProfile.role        = 'teacher';
