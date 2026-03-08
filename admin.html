@@ -698,18 +698,58 @@ document.addEventListener('keydown', e => {
 /* ════════════════════════
    LOAD TICKETS
 ════════════════════════ */
+// Track unread state: ticketId -> true if user replied after last admin reply
+const unreadTickets = new Set();
+
 function loadTickets() {
   try {
     const q = query(collection(db, 'tickets'), orderBy('createdAt', 'desc'));
     onSnapshot(q, snap => {
       allTickets = snap.docs.map(d => ({ _docId: d.id, ...d.data() }));
       updateStats();
+      // Subscribe to latest message per ticket to detect unread
+      snap.docs.forEach(d => subscribeTicketUnread(d.id));
       renderTickets();
     });
   } catch(e) {
     console.error(e);
     document.getElementById('ticketsList').innerHTML =
       '<div class="loading-state">Failed to load tickets. Check your Firestore rules.</div>';
+  }
+}
+
+const unreadSubs = {};
+function subscribeTicketUnread(ticketId) {
+  if (unreadSubs[ticketId]) return; // already subscribed
+  const msgsQ = query(
+    collection(db, 'tickets', ticketId, 'messages'),
+    orderBy('createdAt', 'desc')
+  );
+  unreadSubs[ticketId] = onSnapshot(msgsQ, snap => {
+    if (snap.empty) return;
+    const msgs = snap.docs.map(d => d.data());
+    // Find the latest message
+    const latest = msgs[0];
+    // Unread if latest message is from user (not admin, not internal note)
+    if (latest && latest.role === 'user' && ticketId !== currentTicketId) {
+      unreadTickets.add(ticketId);
+    } else if (ticketId === currentTicketId) {
+      unreadTickets.delete(ticketId);
+    }
+    // Re-render to show/hide dot without full reload
+    updateUnreadDot(ticketId);
+  });
+}
+
+function updateUnreadDot(ticketId) {
+  const row = document.querySelector(`[data-ticket-id="${ticketId}"]`);
+  if (!row) return;
+  const dot = row.querySelector('.unread-dot');
+  if (!dot) return;
+  if (unreadTickets.has(ticketId)) {
+    dot.style.display = 'inline-block';
+  } else {
+    dot.style.display = 'none';
   }
 }
 
@@ -757,8 +797,11 @@ window.renderTickets = function() {
     const catLabels = { bug:'🐛 Bug', account:'🔐 Account', feature:'💡 Feature',
                         appeal:'📋 Appeal', privacy:'🔒 Privacy', district:'🏛 District Request', other:'💬 Other' };
     return `
-      <div class="ticket-row" onclick="openTicket('${t._docId}')" style="cursor:pointer">
-        <div class="ticket-cell ticket-id-cell">${t.ticketId || '—'}</div>
+      <div class="ticket-row" onclick="openTicket('${t._docId}')" style="cursor:pointer" data-ticket-id="${t._docId}">
+        <div class="ticket-cell ticket-id-cell" style="display:flex;align-items:center;gap:7px">
+          <span class="unread-dot" style="display:${unreadTickets.has(t._docId)?'inline-block':'none'};width:8px;height:8px;border-radius:50%;background:var(--coral);flex-shrink:0"></span>
+          ${t.ticketId || '—'}
+        </div>
         <div class="ticket-cell ticket-subject-cell">
           ${escHtml(t.subject || '(no subject)')}
           <div class="ticket-from">${escHtml((t.firstName||'')+' '+(t.lastName||''))} · ${escHtml(t.email||'')}</div>
@@ -791,6 +834,9 @@ window.openTicket = function(docId) {
   const t = allTickets.find(x => x._docId === docId);
   if (!t) return;
   currentTicketId = docId;
+  // Mark as read
+  unreadTickets.delete(docId);
+  updateUnreadDot(docId);
 
   const catLabels = { bug:'🐛 Bug', account:'🔐 Account Issue', feature:'💡 Feature Request',
                       appeal:'📋 Suspension Appeal', privacy:'🔒 Privacy Concern', district:'🏛 District Request', other:'💬 Other' };
@@ -1229,10 +1275,19 @@ async function loadDistrictsList() {
           <div style="font-size:.75rem;color:rgba(255,255,255,.35);margin-top:3px">
             Code: <strong style="color:var(--coral);letter-spacing:.08em">${escHtml(dist.joinCode||'—')}</strong>
             &nbsp;·&nbsp; Admin: ${escHtml((dist.adminEmails||[]).join(', ')||'—')}
-            &nbsp;·&nbsp; ${teacherCount} invited teacher(s)
+            &nbsp;·&nbsp; ${teacherCount} teacher(s) invited
+            &nbsp;·&nbsp; Plan: <strong style="color:#F9FAFB">${sub.plan || 'monthly'}</strong>
           </div>
         </div>
-        <span style="font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;border-radius:50px;background:${statusColors[stat]};color:${statusTxtClr[stat]};flex-shrink:0">${statusText[stat]}</span>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0">
+          <span style="font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;border-radius:50px;background:${statusColors[stat]};color:${statusTxtClr[stat]}">${statusText[stat]}</span>
+          <select onchange="updateDistrictPlan('${d.id}',this.value)" onclick="event.stopPropagation()"
+            style="font-family:'DM Sans',sans-serif;font-size:.75rem;font-weight:600;padding:4px 10px;border-radius:8px;border:1.5px solid rgba(255,255,255,.1);background:#1E293B;color:#F9FAFB;cursor:pointer;outline:none">
+            <option value="trial"    ${stat==='trial'    ?'selected':''}>Trial</option>
+            <option value="active"   ${stat==='active'   ?'selected':''}>Active (Paid)</option>
+            <option value="inactive" ${stat==='inactive' ?'selected':''}>Inactive</option>
+          </select>
+        </div>
         <button onclick="deleteDistrict('${d.id}','${escHtml(dist.name||'')}')" style="padding:7px 14px;border-radius:50px;border:1.5px solid rgba(255,87,51,.2);background:transparent;color:var(--coral);font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;flex-shrink:0;transition:all .2s" onmouseover="this.style.background='rgba(255,87,51,.15)'" onmouseout="this.style.background='transparent'">Delete</button>
       </div>`;
     }).join('');
@@ -1241,6 +1296,17 @@ async function loadDistrictsList() {
     el.innerHTML = '<div style="color:var(--coral);font-size:.84rem;padding:8px">Failed to load districts.</div>';
   }
 }
+
+window.updateDistrictPlan = async function(distId, newStatus) {
+  try {
+    await updateDoc(doc(db, 'districts', distId), { 'subscription.status': newStatus });
+    showToast('Plan updated to ' + newStatus.charAt(0).toUpperCase() + newStatus.slice(1) + '.');
+    loadDistrictsList();
+  } catch(e) {
+    console.error(e);
+    showToast('Failed to update plan.');
+  }
+};
 
 window.deleteDistrict = async function(distId, distName) {
   if (!confirm(`Delete district "${distName}"? This cannot be undone. All members will lose district access.`)) return;
