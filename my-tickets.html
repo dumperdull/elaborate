@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="icon" type="image/png" href="/favicon.png">
 <title>My Tickets — Elaborate</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;0,9..144,900;1,9..144,400&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <style>
@@ -206,11 +207,28 @@ import { getFirestore, collection, query, where,
          serverTimestamp }             from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getFirestore(app);
-let currentUser=null, currentTicket=null, unsubMessages=null, adminProfiles=null, pendingImages=[];
+let currentUser=null, currentTicket=null, unsubMessages=null, pendingImages=[];
+// Admin profile cache: uid -> { displayName, avatarUrl }
+// Used as fallback for old messages that predate the senderAvatar field
+let adminProfileCache = null;
+async function getAdminProfiles() {
+  if (adminProfileCache) return adminProfileCache;
+  adminProfileCache = {};
+  try {
+    // Each admin's public display info is stored on the messages themselves (senderAvatar, senderName)
+    // For old messages we fetch the admins collection as a fallback — this is allowed because
+    // we updated the Firestore rules to allow any logged-in user to read basic admin profiles
+    const snap = await getDocs(collection(db, 'admins'));
+    snap.docs.forEach(d => { adminProfileCache[d.id] = d.data(); });
+  } catch(e) {
+    // Silently fail — will show initials instead
+    console.warn('Could not load admin profiles:', e.message);
+  }
+  return adminProfileCache;
+}
 
 const ADMIN_COLORS=['#FF5733','#F4C542','#7DBE8E','#A78BFA','#38BDF8','#F472B6','#FB923C'];
 function adminColor(uid){let h=0;for(const c of(uid||''))h=(Math.imul(31,h)+c.charCodeAt(0))|0;return ADMIN_COLORS[Math.abs(h)%ADMIN_COLORS.length];}
-async function fetchAdminProfiles(){if(adminProfiles)return adminProfiles;adminProfiles={};try{const s=await getDocs(collection(db,'admins'));s.docs.forEach(d=>{adminProfiles[d.id]=d.data();});}catch(e){}return adminProfiles;}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
 onAuthStateChanged(auth,user=>{
@@ -270,13 +288,14 @@ window.openTicket=function(tJson){
   pendingImages=[];
   if(unsubMessages){unsubMessages();unsubMessages=null;}
   const msgsQ=query(collection(db,'tickets',t._docId,'messages'),orderBy('createdAt','asc'));
-  unsubMessages=onSnapshot(msgsQ,snap=>{renderMessages(snap.docs.map(d=>d.data()).filter(m=>!m.internal));});
+  unsubMessages=onSnapshot(msgsQ,snap=>{ renderMessages(snap.docs.map(d=>d.data()).filter(m=>!m.internal)); });
 };
 
 async function renderMessages(messages){
   const container=document.getElementById('chatMessages');
   if(!container)return;
-  const t=currentTicket, profiles=await fetchAdminProfiles();
+  const t=currentTicket;
+  const adminProfiles = await getAdminProfiles();
   let html=`<div class="original-block"><div class="original-label">Original message</div><div class="original-body">${esc(t.body||'')} </div></div>`;
   if(!messages.length){
     html+='<div style="text-align:center;font-size:.84rem;color:var(--muted);padding:28px 20px;line-height:1.7">No replies yet \u2014 we\u2019ll get back to you soon!</div>';
@@ -293,7 +312,13 @@ async function renderMessages(messages){
     const isNewGroup=senderId!==lastSenderId||m.role!==lastRole;
     lastSenderId=senderId; lastRole=m.role;
     let displayName,avatarUrl,nameColor;
-    if(isAdmin){const p=profiles[senderId]||{};displayName=p.displayName||m.senderName||'Elaborate Support';avatarUrl=p.avatarUrl||'';nameColor=adminColor(senderId);}
+    if(isAdmin){
+      // Prefer fields embedded in the message; fall back to cached admin profile for old messages
+      const cachedProfile = adminProfiles[senderId] || {};
+      displayName = m.senderName   || cachedProfile.displayName || 'Elaborate Support';
+      avatarUrl   = m.senderAvatar || cachedProfile.avatarUrl   || '';
+      nameColor   = adminColor(senderId);
+    }
     else{displayName=m.senderName||t.firstName||'You';avatarUrl='';nameColor='var(--navy)';}
     const initial=displayName[0]?.toUpperCase()||'?';
     const avatarBg=isAdmin?nameColor:'var(--navy)';
