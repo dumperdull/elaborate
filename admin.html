@@ -1981,7 +1981,8 @@ async function loadDistrictsList() {
       el.innerHTML = '<div style="text-align:center;padding:32px;color:rgba(255,255,255,.25);font-size:.88rem">No districts yet. Create one above.</div>';
       return;
     }
-    el.innerHTML = snap.docs.map(d => {
+    const sorted = snap.docs.map(d => ({id:d.id,...d.data()})).sort((a,b)=>(b.sentAt?.seconds||0)-(a.sentAt?.seconds||0));
+    el.innerHTML = sorted.map(e => {
       const dist = d.data();
       const sub  = dist.subscription || {};
       const statusColors = { active:'rgba(125,190,142,.15)', trial:'rgba(244,197,66,.15)', inactive:'rgba(255,255,255,.07)' };
@@ -2338,7 +2339,7 @@ async function loadAnnouncements() {
     if (histEl) {
       if (!history.length) { histEl.innerHTML = '<div style="color:var(--muted);font-size:.84rem">No history yet.</div>'; return; }
       histEl.innerHTML = history.slice().reverse().slice(0,10).map(h => {
-        const date = h.createdAt?.toDate ? h.createdAt.toDate().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
+        const date = h.createdAt ? new Date(h.createdAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
         return `<div style="display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)">
           <div style="font-family:DM Mono,monospace;font-size:.65rem;color:var(--muted);white-space:nowrap;padding-top:2px">${date}</div>
           <div style="flex:1;font-size:.85rem;color:var(--txt);line-height:1.5">${escHtml(h.text||'')}</div>
@@ -2355,21 +2356,24 @@ window.publishAnnouncement = async function() {
   const audience = document.getElementById('announcementAudience').value;
   if (!text) { showToast('Please enter announcement text.'); return; }
   try {
-    const entry = { text, type, audience, createdAt: serverTimestamp(), publishedBy: currentAdmin?.displayName || 'Admin' };
+    const now   = new Date().toISOString();
+    const entry = { text, type, audience, createdAt: now, publishedBy: currentAdmin?.displayName || 'Admin' };
     const ref   = doc(db, 'siteConfig', 'announcements');
     const snap  = await getDoc(ref);
     const existing = snap.exists() ? (snap.data().history || []) : [];
-    await setDoc(ref, { current: entry, history: [...existing, entry] }, { merge: true });
+    // Keep only the last 50 history entries to avoid doc size limits
+    const history = [...existing, entry].slice(-50);
+    await setDoc(ref, { current: entry, history }, { merge: false });
     document.getElementById('announcementText').value = '';
     showToast('📣 Announcement published!');
     loadAnnouncements();
-  } catch(e) { console.error(e); showToast('Failed to publish.'); }
+  } catch(e) { console.error(e); showToast('Failed: ' + e.message); }
 };
 
 window.clearSitewideAnnouncement = async function() {
   if (!confirm('Clear the active announcement? Users will no longer see it.')) return;
   try {
-    await updateDoc(doc(db, 'siteConfig', 'announcements'), { current: null });
+    await setDoc(doc(db, 'siteConfig', 'announcements'), { current: null }, { merge: true });
     showToast('Announcement cleared.');
     loadAnnouncements();
   } catch(e) { showToast('Failed to clear.'); }
@@ -2482,10 +2486,10 @@ window.lookupAndAddStaff = async function() {
   errEl.style.display = 'none';
   if (!email) { errEl.textContent = 'Please enter an email.'; errEl.style.display = 'block'; return; }
   try {
-    const q    = query(collection(db, 'users'), where('email', '==', email));
-    const snap = await getDocs(q);
-    if (snap.empty) { errEl.textContent = 'No Elaborate account found with that email.'; errEl.style.display = 'block'; return; }
-    const uid  = snap.docs[0].id;
+    const allSnap = await getDocs(collection(db, 'users'));
+    const match   = allSnap.docs.find(d => (d.data().email||'').toLowerCase() === email);
+    if (!match) { errEl.textContent = 'No Elaborate account found with that email.'; errEl.style.display = 'block'; return; }
+    const uid  = match.id;
     const existing = await getDoc(doc(db, 'admins', uid));
     if (existing.exists()) { errEl.textContent = 'That user is already a staff member.'; errEl.style.display = 'block'; return; }
     await setDoc(doc(db, 'admins', uid), { email, displayName: name || email.split('@')[0], avatarUrl: '', createdAt: serverTimestamp() });
@@ -2604,9 +2608,8 @@ async function loadAuditLog() {
   if (!listEl) return;
   listEl.innerHTML = '<div style="padding:24px;text-align:center;color:var(--muted);font-size:.85rem">Loading…</div>';
   try {
-    const q    = query(collection(db, 'auditLog'), orderBy('createdAt', 'desc'));
-    const snap = await getDocs(q);
-    auditCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const snap = await getDocs(collection(db, 'auditLog'));
+    auditCache = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => { const ta = a.createdAt?.seconds||0; const tb = b.createdAt?.seconds||0; return tb-ta; });
     renderAuditLog();
   } catch(e) {
     listEl.innerHTML = '<div style="padding:24px;text-align:center;color:var(--coral);font-size:.84rem">Failed to load audit log. Make sure the auditLog collection exists in Firestore.</div>';
@@ -2647,8 +2650,8 @@ let appLibCache = [];
 
 async function loadAppLibrary() {
   try {
-    const snap = await getDocs(query(collection(db, 'appLibrary'), orderBy('createdAt', 'desc')));
-    appLibCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const snap = await getDocs(collection(db, 'appLibrary'));
+    appLibCache = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (b.createdAt||'') > (a.createdAt||'') ? 1 : -1);
     renderLibraryApps();
   } catch(e) {
     const el = document.getElementById('appLibraryList');
@@ -2724,8 +2727,8 @@ async function loadChangelog() {
   const el = document.getElementById('changelogEntries');
   if (!el) return;
   try {
-    const snap = await getDocs(query(collection(db, 'changelog'), orderBy('createdAt', 'desc')));
-    changelogCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const snap = await getDocs(collection(db, 'changelog'));
+    changelogCache = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (b.createdAt||'') > (a.createdAt||'') ? 1 : -1);
     renderChangelogEntries();
   } catch(e) {
     el.innerHTML = '<div style="color:var(--coral);font-size:.84rem">Failed to load. Ensure changelog collection exists.</div>';
@@ -2847,10 +2850,9 @@ async function loadBlastHistory() {
   const el = document.getElementById('blastHistory');
   if (!el) return;
   try {
-    const snap = await getDocs(query(collection(db, 'emailBlasts'), orderBy('sentAt','desc')));
+    const snap = await getDocs(collection(db, 'emailBlasts'));
     if (snap.empty) { el.innerHTML = '<div style="color:var(--muted);font-size:.85rem">No blasts sent yet.</div>'; return; }
     el.innerHTML = snap.docs.map(d => {
-      const e    = d.data();
       const date = e.sentAt?.toDate ? e.sentAt.toDate().toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
       return `<div style="padding:14px 0;border-bottom:1px solid var(--border)">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
@@ -2881,12 +2883,12 @@ async function loadHighlights() {
       const snap = await getDocs(collection(db, 'classrooms'));
       allClassroomsForHighlight = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     }
-    const snap    = await getDocs(query(collection(db, 'highlights'), orderBy('createdAt','desc')));
+    const snap    = await getDocs(collection(db, 'highlights'));
     const listEl  = document.getElementById('highlightsList');
     if (!listEl) return;
-    if (snap.empty) { listEl.innerHTML = '<div style="color:var(--muted);font-size:.85rem">No pinned highlights yet.</div>'; return; }
-    listEl.innerHTML = snap.docs.map(d => {
-      const h    = { id: d.id, ...d.data() };
+    const hDocs = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+    if (!hDocs.length) { listEl.innerHTML = '<div style="color:var(--muted);font-size:.85rem">No pinned highlights yet.</div>'; return; }
+    listEl.innerHTML = hDocs.map(h => {
       const date = h.createdAt?.toDate ? h.createdAt.toDate().toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—';
       return `<div style="display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid var(--border);flex-wrap:wrap">
         <div style="width:38px;height:38px;border-radius:10px;background:rgba(252,211,77,.12);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0">🏆</div>
@@ -2895,7 +2897,7 @@ async function loadHighlights() {
           <div style="font-size:.78rem;color:var(--muted);margin-top:2px">${escHtml(h.teacherName||'Unknown teacher')}${h.message ? ' · <em>'+escHtml(h.message)+'</em>' : ''}</div>
         </div>
         <div style="font-family:DM Mono,monospace;font-size:.65rem;color:var(--faint);white-space:nowrap">${date}</div>
-        <button onclick="unpinHighlight('${d.id}')" style="padding:6px 14px;border-radius:6px;border:1px solid rgba(255,87,51,.2);background:transparent;color:var(--coral);font-family:DM Sans,sans-serif;font-weight:600;font-size:.76rem;cursor:pointer;transition:background .15s" onmouseover="this.style.background='rgba(255,87,51,.1)'" onmouseout="this.style.background='transparent'">Unpin</button>
+        <button onclick="unpinHighlight('${h.id}')" style="padding:6px 14px;border-radius:6px;border:1px solid rgba(255,87,51,.2);background:transparent;color:var(--coral);font-family:DM Sans,sans-serif;font-weight:600;font-size:.76rem;cursor:pointer;transition:background .15s" onmouseover="this.style.background='rgba(255,87,51,.1)'" onmouseout="this.style.background='transparent'">Unpin</button>
       </div>`;
     }).join('');
   } catch(e) { console.error(e); }
@@ -2964,9 +2966,8 @@ async function loadStaffNotes() {
   const feedEl = document.getElementById('staffNotesFeed');
   if (!feedEl) return;
   if (staffNotesUnsub) staffNotesUnsub(); // detach old listener
-  const q = query(collection(db, 'staffNotes'), orderBy('createdAt','desc'));
-  staffNotesUnsub = onSnapshot(q, snap => {
-    const notes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  staffNotesUnsub = onSnapshot(collection(db, 'staffNotes'), snap => {
+    const notes = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
     if (!notes.length) { feedEl.innerHTML = '<div style="padding:32px;text-align:center;color:var(--muted);font-size:.85rem">No notes yet. Be the first to post.</div>'; return; }
     feedEl.innerHTML = notes.map(n => {
       const date = n.createdAt?.toDate ? n.createdAt.toDate().toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : 'just now';
