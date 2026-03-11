@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="icon" type="image/png" href="/favicon.png" />
+<title>Dev Dashboard — Elaborate</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700;0,9..144,900;1,9..144,400&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:      #0A0A0F;
+    --surface: #111118;
+    --surface2:#18181F;
+    --border:  rgba(255,255,255,.07);
+    --border2: rgba(255,255,255,.11);
+    --navy:    #0D1B2A;
+    --blue:    #60A5FA;
+    --lblue:   #7DD3FC;
+    --coral:   #FF5733;
+    --gold:    #F4C542;
+    --sage:    #7DBE8E;
+    --txt:     #F0EEFF;
+    --muted:   rgba(240,238,255,.45);
+    --faint:   rgba(240,238,255,.2);
+    --sidebar-w: 230px;
+    --tr: .17s cubic-bezier(.4,0,.2,1);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--txt); min-height: 100vh; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+
+  /* ── LOGIN ── */
+  #loginScreen { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; background:var(--navy); position:relative; overflow:hidden; }
+  #loginScreen::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse 60% 70% at 70% 30%, rgba(96,165,250,.1), transparent 60%), radial-gradient(ellipse 40% 50% at 20% 80%, rgba(125,211,252,.06), transparent 55%); pointer-events:none; }
+  .login-card { background:var(--surface); border-radius:24px; padding:52px 48px; width:100%; max-width:400px; box-shadow:0 24px 80px rgba(0,0,0,.5); border:1px solid var(--border2); position:relative; z-index:1; animation:fadeUp .45s both; }
+  .login-logo { font-family:'Fraunces',serif; font-weight:900; font-size:1.4rem; color:var(--txt); margin-bottom:4px; letter-spacing:-.02em; }
+  .login-logo span { color:var(--blue); }
+  .login-badge { display:inline-flex; align-items:center; gap:6px; font-size:.65rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--blue); background:rgba(96,165,250,.1); border:1px solid rgba(96,165,250,.22); padding:4px 12px; border-radius:50px; margin-bottom:26px; }
+  .login-card h2 { font-family:'Fraunces',serif; font-weight:900; font-size:1.8rem; color:var(--txt); margin-bottom:6px; letter-spacing:-.03em; }
+  .login-sub { font-size:.86rem; color:var(--muted); margin-bottom:28px; line-height:1.55; }
+  .login-group { margin-bottom:16px; }
+  .login-group label { display:block; font-family:'DM Mono',monospace; font-size:.62rem; font-weight:500; letter-spacing:.1em; text-transform:uppercase; color:var(--faint); margin-bottom:7px; }
+  .login-group input { width:100%; padding:12px 14px; border-radius:10px; border:1.5px solid var(--border2); background:var(--bg); color:var(--txt); font-family:'DM Sans',sans-serif; font-size:.92rem; outline:none; transition:border-color var(--tr); }
+  .login-group input:focus { border-color:var(--blue); }
+  .login-btn { width:100%; margin-top:6px; font-family:'DM Sans',sans-serif; font-size:.95rem; font-weight:700; padding:13px; border-radius:50px; border:none; background:var(--blue); color:var(--navy); cursor:pointer; transition:all var(--tr); }
+  .login-btn:hover { background:var(--lblue); transform:translateY(-2px); box-shadow:0 8px 24px rgba(96,165,250,.25); }
+  .login-btn:disabled { opacity:.5; cursor:not-allowed; transform:none; box-shadow:none; }
+  .login-error { background:rgba(255,87,51,.1); border:1.5px solid rgba(255,87,51,.22); color:var(--coral); border-radius:10px; padding:10px 14px; font-size:.82rem; margin-bottom:14px; display:none; }
+  .login-error.show { display:block; }
+
+  /* ── SHELL ── */
+  #dashboard { display:none; min-height:100vh; }
+  #dashboard.active { display:flex; flex-direction:column; }
+  .dev-shell { display:flex; flex:1; min-height:0; }
+
+  /* ── SIDEBAR ── */
+  .sidebar { width:var(--sidebar-w); flex-shrink:0; background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; position:sticky; top:0; height:100vh; overflow-y:auto; }
+  .sidebar-brand { padding:24px 18px 20px; border-bottom:1px solid var(--border); }
+  .sidebar-logo { font-family:'Fraunces',serif; font-weight:900; font-size:1.25rem; color:var(--txt); letter-spacing:-.02em; }
+  .sidebar-logo span { color:var(--blue); }
+  .sidebar-sub { font-family:'DM Mono',monospace; font-size:.6rem; letter-spacing:.1em; text-transform:uppercase; color:var(--faint); margin-top:4px; }
+  .sidebar-nav { padding:14px 10px; flex:1; }
+  .sidebar-section { font-family:'DM Mono',monospace; font-size:.58rem; letter-spacing:.14em; text-transform:uppercase; color:var(--faint); padding:14px 10px 6px; }
+  .sidebar-item { display:flex; align-items:center; gap:10px; width:100%; padding:9px 10px; border-radius:9px; border:none; background:transparent; color:var(--muted); font-family:'DM Sans',sans-serif; font-size:.85rem; font-weight:600; cursor:pointer; transition:all var(--tr); text-align:left; border:1.5px solid transparent; }
+  .sidebar-item:hover { background:rgba(255,255,255,.05); color:var(--txt); }
+  .sidebar-item.active { background:rgba(96,165,250,.1); color:var(--blue); border-color:rgba(96,165,250,.25); }
+  .sidebar-icon { width:30px; height:30px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:.9rem; flex-shrink:0; background:rgba(255,255,255,.05); transition:background var(--tr); }
+  .sidebar-item.active .sidebar-icon { background:rgba(96,165,250,.15); }
+  .sidebar-item-label { flex:1; }
+  .sidebar-bottom { margin-top:auto; padding:14px 10px; border-top:1px solid var(--border); }
+  .dev-profile-btn { display:flex; align-items:center; gap:10px; width:100%; background:transparent; border:1px solid var(--border); border-radius:10px; padding:9px 11px; cursor:pointer; transition:all var(--tr); }
+  .dev-profile-btn:hover { background:rgba(255,255,255,.05); border-color:var(--border2); }
+  .sidebar-avatar { width:30px; height:30px; border-radius:7px; background:var(--blue); display:flex; align-items:center; justify-content:center; font-family:'Fraunces',serif; font-weight:900; font-size:.8rem; color:var(--navy); overflow:hidden; flex-shrink:0; }
+  .sidebar-name { font-size:.8rem; font-weight:600; color:var(--txt); flex:1; text-align:left; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .sidebar-signout { width:100%; margin-top:7px; padding:8px; border-radius:8px; border:none; background:transparent; color:var(--muted); font-family:'DM Sans',sans-serif; font-size:.8rem; font-weight:600; cursor:pointer; transition:all var(--tr); }
+  .sidebar-signout:hover { background:rgba(255,87,51,.12); color:var(--coral); }
+
+  /* ── MAIN CONTENT ── */
+  .dev-content { flex:1; overflow-y:auto; background:var(--bg); }
+  .dash-main { padding:36px 36px 80px; max-width:1060px; margin:0 auto; }
+
+  /* ── PAGE HEADER ── */
+  .page-header { margin-bottom:28px; padding-bottom:22px; border-bottom:1px solid rgba(96,165,250,.15); }
+  .page-header-eyebrow { font-family:'DM Mono',monospace; font-size:.62rem; font-weight:500; letter-spacing:.14em; text-transform:uppercase; color:var(--blue); margin-bottom:6px; }
+  .page-header h1 { font-family:'Fraunces',serif; font-weight:900; font-size:1.9rem; color:var(--txt); letter-spacing:-.03em; line-height:1; }
+  .page-header-sub { font-size:.84rem; color:var(--muted); margin-top:6px; }
+
+  /* ── STAT CARDS ── */
+  .stats-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:12px; margin-bottom:28px; }
+  .stat-card { background:var(--surface); border-radius:12px; padding:18px 20px; border:1px solid var(--border); position:relative; overflow:hidden; }
+  .stat-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:var(--blue); }
+  .stat-card.gold::before  { background:var(--gold); }
+  .stat-card.coral::before { background:var(--coral); }
+  .stat-card.sage::before  { background:var(--sage); }
+  .stat-value { font-family:'DM Mono',monospace; font-size:2rem; font-weight:500; letter-spacing:-.03em; margin-bottom:4px; line-height:1; color:var(--blue); }
+  .stat-card.gold  .stat-value  { color:var(--gold); }
+  .stat-card.coral .stat-value  { color:var(--coral); }
+  .stat-card.sage  .stat-value  { color:var(--sage); }
+  .stat-label { font-family:'DM Mono',monospace; font-size:.6rem; font-weight:500; color:var(--faint); text-transform:uppercase; letter-spacing:.1em; }
+
+  /* ── CARDS ── */
+  .card { background:var(--surface); border-radius:12px; border:1px solid var(--border); padding:24px; margin-bottom:18px; }
+  .card-label { font-family:'DM Mono',monospace; font-size:.6rem; letter-spacing:.12em; text-transform:uppercase; color:var(--faint); margin-bottom:14px; }
+  .card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:10px; }
+  .card-title { font-family:'DM Mono',monospace; font-size:.6rem; letter-spacing:.12em; text-transform:uppercase; color:var(--faint); }
+  .card-desc { font-size:.82rem; color:var(--muted); margin-top:3px; }
+
+  /* ── BUTTONS ── */
+  .btn { font-family:'DM Sans',sans-serif; font-weight:700; font-size:.82rem; padding:8px 16px; border-radius:8px; border:none; cursor:pointer; transition:all var(--tr); }
+  .btn-blue  { background:var(--blue); color:var(--navy); }
+  .btn-blue:hover  { background:var(--lblue); transform:translateY(-1px); }
+  .btn-ghost { background:transparent; color:var(--muted); border:1.5px solid var(--border2); }
+  .btn-ghost:hover { background:rgba(255,255,255,.06); color:var(--txt); }
+  .btn-danger{ background:rgba(255,87,51,.1); color:var(--coral); border:1px solid rgba(255,87,51,.2); }
+  .btn-danger:hover{ background:rgba(255,87,51,.2); }
+
+  /* ── FILTER PILLS ── */
+  .filter-pills { display:flex; gap:7px; flex-wrap:wrap; margin-bottom:16px; }
+  .pill { padding:5px 14px; border-radius:50px; border:1.5px solid var(--border); background:transparent; color:var(--muted); font-size:.76rem; font-weight:600; font-family:'DM Sans',sans-serif; cursor:pointer; transition:all var(--tr); }
+  .pill.active { background:rgba(96,165,250,.12); color:var(--blue); border-color:rgba(96,165,250,.4); }
+  .pill:hover:not(.active) { background:rgba(255,255,255,.05); color:var(--txt); }
+
+  /* ── INPUTS ── */
+  .form-input, .form-select, .form-textarea {
+    width:100%; padding:10px 13px; border-radius:9px;
+    border:1.5px solid var(--border2); background:var(--bg); color:var(--txt);
+    font-family:'DM Sans',sans-serif; font-size:.88rem; outline:none;
+    transition:border-color var(--tr);
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus { border-color:var(--blue); }
+  .form-textarea { resize:vertical; line-height:1.55; }
+  .form-select { cursor:pointer; }
+  .form-label { font-family:'DM Mono',monospace; font-size:.6rem; letter-spacing:.1em; text-transform:uppercase; color:var(--faint); margin-bottom:7px; display:block; }
+
+  /* ── MODAL ── */
+  .modal-overlay { position:fixed; inset:0; z-index:200; background:rgba(0,0,0,.7); backdrop-filter:blur(8px); display:flex; align-items:center; justify-content:center; padding:24px; opacity:0; pointer-events:none; transition:opacity .2s; }
+  .modal-overlay.open { opacity:1; pointer-events:all; }
+  .modal { background:var(--surface); border-radius:20px; padding:36px; width:100%; max-width:520px; box-shadow:0 24px 72px rgba(0,0,0,.5); border:1.5px solid var(--border2); transform:translateY(12px) scale(.98); transition:transform .25s cubic-bezier(.4,0,.2,1); max-height:90vh; overflow-y:auto; }
+  .modal-overlay.open .modal { transform:translateY(0) scale(1); }
+  .modal-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; }
+  .modal-close { width:28px; height:28px; border-radius:6px; border:none; background:var(--surface2); cursor:pointer; font-size:.85rem; color:var(--txt); display:flex; align-items:center; justify-content:center; transition:all var(--tr); }
+  .modal-close:hover { background:rgba(255,87,51,.15); color:var(--coral); }
+  .modal h3 { font-family:'Fraunces',serif; font-weight:900; font-size:1.3rem; color:var(--txt); letter-spacing:-.02em; }
+  .modal-field { margin-bottom:16px; }
+  .modal-actions { display:flex; gap:8px; margin-top:20px; flex-wrap:wrap; }
+
+  /* ── TOAST ── */
+  .toast { position:fixed; bottom:28px; left:50%; transform:translateX(-50%) translateY(16px); background:var(--surface); color:var(--txt); padding:10px 22px; border-radius:50px; font-size:.84rem; font-weight:600; opacity:0; transition:all .25s; z-index:999; pointer-events:none; box-shadow:0 8px 28px rgba(0,0,0,.4); border:1px solid var(--border2); }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* ── NOTE FEED ── */
+  .note-item { display:flex; gap:10px; padding:12px 0; border-bottom:1px solid var(--border); }
+  .note-item:last-child { border-bottom:none; }
+  .note-avatar { width:28px; height:28px; border-radius:7px; background:rgba(96,165,250,.15); display:flex; align-items:center; justify-content:center; font-family:'Fraunces',serif; font-weight:900; font-size:.75rem; color:var(--blue); flex-shrink:0; }
+  .note-author { font-size:.8rem; font-weight:700; color:var(--txt); }
+  .note-time { font-family:'DM Mono',monospace; font-size:.6rem; color:var(--faint); margin-left:6px; }
+  .note-text { font-size:.84rem; color:rgba(240,238,255,.7); line-height:1.55; word-break:break-word; margin-top:3px; }
+
+  /* ── TEAM MEMBER ROW ── */
+  .team-row { display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--border); }
+  .team-row:last-child { border-bottom:none; }
+  .team-avatar { width:36px; height:36px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:.9rem; flex-shrink:0; overflow:hidden; }
+
+  /* ── TASK ROW ── */
+  .task-row { display:flex; align-items:flex-start; gap:12px; padding:14px 0; border-bottom:1px solid var(--border); }
+  .task-row:last-child { border-bottom:none; }
+  .task-icon { width:32px; height:32px; border-radius:8px; background:rgba(96,165,250,.1); display:flex; align-items:center; justify-content:center; font-size:.88rem; flex-shrink:0; }
+  .task-title { font-weight:600; color:var(--txt); font-size:.9rem; margin-bottom:4px; }
+  .task-detail { font-size:.8rem; color:var(--muted); line-height:1.5; margin-bottom:6px; }
+  .task-meta { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .pri-badge { font-family:'DM Mono',monospace; font-size:.58rem; padding:2px 7px; border-radius:4px; background:rgba(255,255,255,.06); text-transform:uppercase; letter-spacing:.06em; }
+  .status-select { font-family:'DM Mono',monospace; font-size:.6rem; padding:3px 8px; border-radius:5px; border:1px solid var(--border); background:var(--bg); cursor:pointer; outline:none; letter-spacing:.04em; text-transform:uppercase; }
+  .task-date { font-family:'DM Mono',monospace; font-size:.58rem; color:var(--faint); }
+  .task-delete { width:26px; height:26px; border-radius:6px; border:none; background:rgba(255,87,51,.08); color:var(--coral); cursor:pointer; font-size:.74rem; flex-shrink:0; transition:all var(--tr); }
+  .task-delete:hover { background:rgba(255,87,51,.2); }
+
+  /* ── CHANGELOG ROW ── */
+  .cl-row { padding:14px 0; border-bottom:1px solid var(--border); }
+  .cl-row:last-child { border-bottom:none; }
+  .cl-version { font-family:'DM Mono',monospace; font-size:.7rem; color:var(--blue); font-weight:500; }
+  .cl-date    { font-family:'DM Mono',monospace; font-size:.6rem; color:var(--faint); margin-left:10px; }
+  .cl-notes   { font-size:.86rem; color:rgba(240,238,255,.7); margin-top:6px; line-height:1.6; white-space:pre-wrap; }
+
+  @keyframes fadeUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:none; } }
+  @keyframes spin   { to { transform:rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<!-- ════ LOGIN ════ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">Elaborate<span>.</span></div>
+    <div class="login-badge">💻 Dev Dashboard</div>
+    <h2>Sign in</h2>
+    <p class="login-sub">Access is restricted to the Elaborate developer team.</p>
+    <div class="login-error" id="loginError"></div>
+    <div class="login-group">
+      <label>Email</label>
+      <input type="email" id="loginEmail" placeholder="you@example.com" onkeydown="if(event.key==='Enter')doLogin()" />
+    </div>
+    <div class="login-group">
+      <label>Password</label>
+      <input type="password" id="loginPassword" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" />
+    </div>
+    <button class="login-btn" id="loginBtn" onclick="doLogin()">Sign In →</button>
+  </div>
+</div>
+
+<!-- ════ DASHBOARD ════ -->
+<div id="dashboard">
+  <div class="dev-shell">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="sidebar-logo">Elaborate<span>.</span></div>
+        <div class="sidebar-sub">Dev Dashboard</div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="sidebar-section">Workspace</div>
+        <button id="tabOverviewBtn"   class="sidebar-item active" onclick="switchTab('overview')">
+          <div class="sidebar-icon">🏠</div><span class="sidebar-item-label">Overview</span>
+        </button>
+        <button id="tabTasksBtn"      class="sidebar-item" onclick="switchTab('tasks')">
+          <div class="sidebar-icon">📋</div><span class="sidebar-item-label">Task Board</span>
+        </button>
+        <button id="tabNotesBtn"      class="sidebar-item" onclick="switchTab('notes')">
+          <div class="sidebar-icon">📝</div><span class="sidebar-item-label">Dev Notes</span>
+        </button>
+        <div class="sidebar-section">Platform</div>
+        <button id="tabChangelogBtn"  class="sidebar-item" onclick="switchTab('changelog')">
+          <div class="sidebar-icon">📦</div><span class="sidebar-item-label">Changelog</span>
+        </button>
+        <button id="tabFirestoreBtn"  class="sidebar-item" onclick="switchTab('firestore')">
+          <div class="sidebar-icon">🔥</div><span class="sidebar-item-label">DB Quick-View</span>
+        </button>
+        <div class="sidebar-section">Team</div>
+        <button id="tabTeamBtn"       class="sidebar-item" onclick="switchTab('team')">
+          <div class="sidebar-icon">👥</div><span class="sidebar-item-label">Dev Team</span>
+        </button>
+      </nav>
+      <div class="sidebar-bottom">
+        <button class="dev-profile-btn">
+          <div class="sidebar-avatar" id="sidebarAvatar">?</div>
+          <span class="sidebar-name" id="sidebarName">Loading…</span>
+        </button>
+        <button class="sidebar-signout" onclick="doSignOut()">Sign Out</button>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="dev-content">
+
+      <!-- ══ OVERVIEW ══ -->
+      <div id="tabOverview" class="dash-main">
+        <div class="page-header">
+          <div class="page-header-eyebrow">Workspace / Overview</div>
+          <h1>Developer Hub</h1>
+          <div class="page-header-sub">Welcome to the Elaborate dev dashboard. Everything your team needs, in one place.</div>
+        </div>
+        <div class="stats-row">
+          <div class="stat-card"><div class="stat-value" id="ovStatDevs">—</div><div class="stat-label">Developers</div></div>
+          <div class="stat-card gold"><div class="stat-value" id="ovStatOpen">—</div><div class="stat-label">Open Tasks</div></div>
+          <div class="stat-card coral"><div class="stat-value" id="ovStatBugs">—</div><div class="stat-label">Open Bugs</div></div>
+          <div class="stat-card sage"><div class="stat-value" id="ovStatDone">—</div><div class="stat-label">Done This Week</div></div>
+        </div>
+
+        <!-- Recent tasks -->
+        <div class="card">
+          <div class="card-header">
+            <div><div class="card-title">Recent Tasks</div><div class="card-desc">Latest activity on the board</div></div>
+            <button class="btn btn-blue" onclick="switchTab('tasks')">View All →</button>
+          </div>
+          <div id="ovRecentTasks"><div style="color:var(--muted);font-size:.85rem">Loading…</div></div>
+        </div>
+
+        <!-- Quick note -->
+        <div class="card">
+          <div class="card-label">Quick Note to Team</div>
+          <div style="display:flex;gap:10px">
+            <input type="text" id="quickNoteInput" class="form-input" placeholder="Post a note for the dev team…" onkeydown="if(event.key==='Enter')addDevNote()" />
+            <button class="btn btn-blue" onclick="addDevNote()" style="white-space:nowrap">Post</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ TASK BOARD ══ -->
+      <div id="tabTasks" class="dash-main" style="display:none">
+        <div class="page-header">
+          <div class="page-header-eyebrow">Workspace / Tasks</div>
+          <h1>Task Board</h1>
+          <div class="page-header-sub">Track bugs, features, and tasks across the dev team.</div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px">
+          <div class="filter-pills">
+            <button class="pill active" id="pillAll"     onclick="setTaskFilter('all')">All</button>
+            <button class="pill"        id="pillBug"     onclick="setTaskFilter('bug')">🐛 Bugs</button>
+            <button class="pill"        id="pillFeature" onclick="setTaskFilter('feature')">✨ Features</button>
+            <button class="pill"        id="pillTask"    onclick="setTaskFilter('task')">📌 Tasks</button>
+            <button class="pill"        id="pillDone"    onclick="setTaskFilter('done')">✅ Done</button>
+          </div>
+          <button class="btn btn-blue" onclick="openNewTask()">+ New Task</button>
+        </div>
+        <div class="card" style="padding:0">
+          <div id="taskList" style="padding:8px 24px"></div>
+        </div>
+      </div>
+
+      <!-- ══ DEV NOTES ══ -->
+      <div id="tabNotes" class="dash-main" style="display:none">
+        <div class="page-header">
+          <div class="page-header-eyebrow">Workspace / Notes</div>
+          <h1>Dev Notes</h1>
+          <div class="page-header-sub">Shared live scratchpad for the developer team. All messages are visible to everyone.</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Post a Note</div>
+          <div style="display:flex;gap:10px;margin-bottom:6px">
+            <textarea id="devNoteInput" class="form-textarea" placeholder="Leave a note, link, reminder, or update for the team…" style="height:80px;flex:1"></textarea>
+            <button class="btn btn-blue" onclick="addDevNote()" style="align-self:flex-end">Post</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-label">Notes Feed</div>
+          <div id="devNotesFeed"><div style="color:var(--muted);font-size:.85rem">Loading…</div></div>
+        </div>
+      </div>
+
+      <!-- ══ CHANGELOG ══ -->
+      <div id="tabChangelog" class="dash-main" style="display:none">
+        <div class="page-header">
+          <div class="page-header-eyebrow">Platform / Changelog</div>
+          <h1>Changelog</h1>
+          <div class="page-header-sub">Publish version notes visible to all Elaborate users.</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Publish New Entry</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+            <div>
+              <label class="form-label">Version</label>
+              <input type="text" id="clVersion" class="form-input" placeholder="e.g. 1.4.2" />
+            </div>
+            <div>
+              <label class="form-label">Tag</label>
+              <select id="clTag" class="form-select">
+                <option value="update">Update</option>
+                <option value="feature">Feature</option>
+                <option value="fix">Bug Fix</option>
+                <option value="hotfix">Hotfix</option>
+              </select>
+            </div>
+          </div>
+          <div style="margin-bottom:12px">
+            <label class="form-label">Title</label>
+            <input type="text" id="clTitle" class="form-input" placeholder="Short headline…" />
+          </div>
+          <div style="margin-bottom:14px">
+            <label class="form-label">Notes</label>
+            <textarea id="clNotes" class="form-textarea" style="min-height:100px" placeholder="What changed? Use bullet points or prose…"></textarea>
+          </div>
+          <button class="btn btn-blue" onclick="publishChangelog()">Publish to Changelog →</button>
+        </div>
+        <div class="card">
+          <div class="card-label">Published Entries</div>
+          <div id="changelogList"><div style="color:var(--muted);font-size:.85rem">Loading…</div></div>
+        </div>
+      </div>
+
+      <!-- ══ DB QUICK-VIEW ══ -->
+      <div id="tabFirestore" class="dash-main" style="display:none">
+        <div class="page-header">
+          <div class="page-header-eyebrow">Platform / Database</div>
+          <h1>DB Quick-View</h1>
+          <div class="page-header-sub">Check live collection counts and recent entries. Read-only — use the Firebase console for direct writes.</div>
+        </div>
+        <div class="stats-row" id="dbStats">
+          <div class="stat-card"><div class="stat-value" id="dbStatUsers">—</div><div class="stat-label">Users</div></div>
+          <div class="stat-card gold"><div class="stat-value" id="dbStatTickets">—</div><div class="stat-label">Tickets</div></div>
+          <div class="stat-card sage"><div class="stat-value" id="dbStatClassrooms">—</div><div class="stat-label">Classrooms</div></div>
+          <div class="stat-card coral"><div class="stat-value" id="dbStatAdmins">—</div><div class="stat-label">Staff</div></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Recent Signups</div>
+            <button class="btn btn-ghost" onclick="loadDbView()">↻ Refresh</button>
+          </div>
+          <div id="dbRecentUsers"><div style="color:var(--muted);font-size:.85rem">Loading…</div></div>
+        </div>
+        <div class="card">
+          <div style="font-size:.82rem;color:var(--muted);line-height:1.65">
+            For full database access, go to the
+            <a href="https://console.firebase.google.com/project/elaborate-edc16/firestore" target="_blank" style="color:var(--blue);text-decoration:none;font-weight:600">Firebase Console →</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ TEAM ══ -->
+      <div id="tabTeam" class="dash-main" style="display:none">
+        <div class="page-header">
+          <div class="page-header-eyebrow">Team / Dev Team</div>
+          <h1>Dev Team</h1>
+          <div class="page-header-sub">Everyone with a developer or Jr. Dev rank on Elaborate.</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Developers</div>
+          <div id="teamDevList"><div style="color:var(--muted);font-size:.85rem">Loading…</div></div>
+        </div>
+        <div class="card">
+          <div class="card-label">Jr. Developers</div>
+          <div id="teamJrList"><div style="color:var(--muted);font-size:.85rem">Loading…</div></div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ══ NEW TASK MODAL ══ -->
+<div id="newTaskModal" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-top">
+      <h3>New Task</h3>
+      <button class="modal-close" onclick="closeNewTask()">✕</button>
+    </div>
+    <div class="modal-field">
+      <label class="form-label">Type</label>
+      <select id="taskType" class="form-select">
+        <option value="bug">🐛 Bug</option>
+        <option value="feature">✨ Feature Request</option>
+        <option value="task">📌 Task</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label class="form-label">Title</label>
+      <input type="text" id="taskTitle" class="form-input" placeholder="Brief description…" />
+    </div>
+    <div class="modal-field">
+      <label class="form-label">Priority</label>
+      <select id="taskPriority" class="form-select">
+        <option value="low">Low</option>
+        <option value="medium" selected>Medium</option>
+        <option value="high">High</option>
+        <option value="critical">🔴 Critical</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label class="form-label">Details (optional)</label>
+      <textarea id="taskDetails" class="form-textarea" style="min-height:80px" placeholder="Steps to reproduce, context, links…"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-blue" onclick="submitNewTask()">Create Task</button>
+      <button class="btn btn-ghost" onclick="closeNewTask()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp }        from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+                                 from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getFirestore, collection, getDocs, doc, getDoc,
+         addDoc, updateDoc, deleteDoc, setDoc,
+         onSnapshot, serverTimestamp, query, orderBy, limit }
+                                 from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyA4f0NpoH1LLmbejrNmOgIxbD__MIUZkGs",
+  authDomain:        "elaborate-edc16.firebaseapp.com",
+  projectId:         "elaborate-edc16",
+  storageBucket:     "elaborate-edc16.firebasestorage.app",
+  messagingSenderId: "923385978777",
+  appId:             "1:923385978777:web:7d0fdb0472e14e8500bd08"
+};
+
+const DEV_RANKS = ['developer','jr_dev'];
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+let currentDev   = null;
+let tasksCache   = [];
+let taskFilter   = 'all';
+let notesUnsub   = null;
+
+/* ── HELPERS ── */
+const escHtml = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+/* ── AUTH ── */
+onAuthStateChanged(auth, async user => {
+  if (!user) {
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('dashboard').style.display   = 'none';
+    return;
+  }
+  // Check they have a dev rank
+  let adminDoc = null;
+  try {
+    const snap = await getDoc(doc(db, 'admins', user.uid));
+    if (snap.exists()) adminDoc = snap.data();
+  } catch(e) {}
+
+  const rank = adminDoc?.rank || '';
+  const isOwner = user.email === 'jonnyschoen29@gmail.com';
+  if (!isOwner && !DEV_RANKS.includes(rank)) {
+    await signOut(auth);
+    showLoginError('Access denied: your account does not have a developer rank.');
+    return;
+  }
+
+  currentDev = {
+    uid:         user.uid,
+    email:       user.email,
+    displayName: adminDoc?.displayName || user.email.split('@')[0],
+    avatarUrl:   adminDoc?.avatarUrl   || '',
+    rank:        isOwner ? 'owner' : rank,
+  };
+
+  renderSidebarProfile();
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('dashboard').style.display   = 'flex';
+  switchTab('overview');
+});
+
+window.doLogin = async function() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass  = document.getElementById('loginPassword').value;
+  const btn   = document.getElementById('loginBtn');
+  if (!email || !pass) { showLoginError('Please fill in all fields.'); return; }
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+  } catch(e) {
+    showLoginError('Incorrect email or password.');
+    btn.disabled = false; btn.textContent = 'Sign In →';
+  }
+};
+
+function showLoginError(msg) {
+  const el = document.getElementById('loginError');
+  el.textContent = msg; el.classList.add('show');
+}
+
+window.doSignOut = function() { signOut(auth); };
+
+function renderSidebarProfile() {
+  const nameEl   = document.getElementById('sidebarName');
+  const avatarEl = document.getElementById('sidebarAvatar');
+  if (nameEl)   nameEl.textContent = currentDev.displayName;
+  if (avatarEl) {
+    if (currentDev.avatarUrl) {
+      avatarEl.innerHTML = `<img src="${escHtml(currentDev.avatarUrl)}" style="width:100%;height:100%;object-fit:cover" />`;
+    } else {
+      avatarEl.textContent = currentDev.displayName[0]?.toUpperCase() || '?';
+    }
+  }
+}
+
+/* ── TAB SWITCHER ── */
+const ALL_TABS = ['overview','tasks','notes','changelog','firestore','team'];
+
+window.switchTab = function(tab) {
+  ALL_TABS.forEach(t => {
+    const el  = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
+    const btn = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1) + 'Btn');
+    if (el)  el.style.display  = t === tab ? '' : 'none';
+    if (btn) btn.classList.toggle('active', t === tab);
+  });
+  if (tab === 'overview')   loadOverview();
+  if (tab === 'tasks')      loadTasks();
+  if (tab === 'notes')      loadNotes();
+  if (tab === 'changelog')  loadChangelog();
+  if (tab === 'firestore')  loadDbView();
+  if (tab === 'team')       loadTeam();
+};
+
+/* ══ OVERVIEW ══ */
+async function loadOverview() {
+  try {
+    const adminSnap = await getDocs(collection(db, 'admins'));
+    const devCount  = adminSnap.docs.filter(d => DEV_RANKS.includes(d.data().rank)).length;
+    document.getElementById('ovStatDevs').textContent = devCount;
+
+    const taskSnap  = await getDocs(collection(db, 'devTasks'));
+    const tasks     = taskSnap.docs.map(d => ({ id:d.id, ...d.data() }));
+    document.getElementById('ovStatOpen').textContent = tasks.filter(t => t.status !== 'done').length;
+    document.getElementById('ovStatBugs').textContent = tasks.filter(t => t.type === 'bug' && t.status !== 'done').length;
+    const weekAgo = Date.now() - 7*24*60*60*1000;
+    document.getElementById('ovStatDone').textContent = tasks.filter(t => t.status === 'done' && (t.createdAt?.seconds||0)*1000 > weekAgo).length;
+
+    // Recent tasks preview (last 5)
+    const recent = tasks.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0)).slice(0,5);
+    const el = document.getElementById('ovRecentTasks');
+    if (!recent.length) { el.innerHTML = '<div style="color:var(--muted);font-size:.85rem;padding:8px 0">No tasks yet.</div>'; return; }
+    const priColors = { critical:'#F87171', high:'var(--coral)', medium:'var(--gold)', low:'#94A3B8' };
+    const typeEmoji = { bug:'🐛', feature:'✨', task:'📌' };
+    const statusCol = { open:'var(--coral)', in_progress:'var(--gold)', done:'var(--sage)' };
+    el.innerHTML = recent.map(t => `
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+        <div style="font-size:.88rem;flex-shrink:0">${typeEmoji[t.type]||'📌'}</div>
+        <div style="flex:1;font-size:.88rem;font-weight:600;color:var(--txt)">${escHtml(t.title||'Untitled')}</div>
+        <span style="font-family:DM Mono,monospace;font-size:.58rem;padding:2px 7px;border-radius:4px;background:rgba(255,255,255,.06);color:${priColors[t.priority]||'var(--muted)'}">${t.priority||'—'}</span>
+        <span style="font-family:DM Mono,monospace;font-size:.58rem;color:${statusCol[t.status]||'var(--muted)'}">${(t.status||'open').replace('_',' ')}</span>
+      </div>`).join('');
+  } catch(e) { console.error(e); }
+}
+
+/* ══ TASKS ══ */
+async function loadTasks() {
+  const el = document.getElementById('taskList');
+  el.innerHTML = '<div style="color:var(--muted);font-size:.85rem;padding:16px 0">Loading…</div>';
+  try {
+    const snap  = await getDocs(collection(db, 'devTasks'));
+    tasksCache  = snap.docs.map(d => ({ id:d.id, ...d.data() }))
+      .sort((a,b) => {
+        const pri = { critical:0, high:1, medium:2, low:3 };
+        return (pri[a.priority]??2) - (pri[b.priority]??2) || (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0);
+      });
+    renderTasks();
+  } catch(e) { el.innerHTML = `<div style="color:var(--coral);font-size:.84rem">${e.message}</div>`; }
+}
+
+window.setTaskFilter = function(f) {
+  taskFilter = f;
+  ['all','bug','feature','task','done'].forEach(k => {
+    const btn = document.getElementById('pill' + k.charAt(0).toUpperCase() + k.slice(1));
+    if (!btn) return;
+    btn.classList.toggle('active', k === f);
+  });
+  renderTasks();
+};
+
+function renderTasks() {
+  const el = document.getElementById('taskList');
+  let filtered = tasksCache;
+  if      (taskFilter === 'done')    filtered = tasksCache.filter(t => t.status === 'done');
+  else if (taskFilter !== 'all')     filtered = tasksCache.filter(t => t.type === taskFilter && t.status !== 'done');
+  else                               filtered = tasksCache.filter(t => t.status !== 'done');
+
+  if (!filtered.length) { el.innerHTML = '<div style="color:var(--muted);font-size:.85rem;padding:16px 0">No tasks here.</div>'; return; }
+  const priColors = { critical:'#F87171', high:'var(--coral)', medium:'var(--gold)', low:'#94A3B8' };
+  const typeEmoji = { bug:'🐛', feature:'✨', task:'📌' };
+  const statusCol = { open:'var(--coral)', in_progress:'var(--gold)', done:'var(--sage)' };
+
+  el.innerHTML = filtered.map(t => {
+    const date = t.createdAt?.toDate ? t.createdAt.toDate().toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—';
+    return `<div class="task-row">
+      <div class="task-icon">${typeEmoji[t.type]||'📌'}</div>
+      <div style="flex:1;min-width:0">
+        <div class="task-title">${escHtml(t.title||'Untitled')}</div>
+        ${t.details ? `<div class="task-detail">${escHtml(t.details)}</div>` : ''}
+        <div class="task-meta">
+          <span class="pri-badge" style="color:${priColors[t.priority]||'var(--muted)'}">${t.priority||'medium'}</span>
+          <select class="status-select" onchange="updateTaskStatus('${t.id}',this.value)" style="color:${statusCol[t.status]||'var(--muted)'}">
+            <option value="open"        ${t.status==='open'        ?'selected':''}>Open</option>
+            <option value="in_progress" ${t.status==='in_progress' ?'selected':''}>In Progress</option>
+            <option value="done"        ${t.status==='done'        ?'selected':''}>Done</option>
+          </select>
+          <span class="task-date">${date} · ${escHtml(t.createdByName||'?')}</span>
+        </div>
+      </div>
+      <button class="task-delete" onclick="deleteTask('${t.id}')">✕</button>
+    </div>`;
+  }).join('');
+}
+
+window.openNewTask  = function() { document.getElementById('newTaskModal').classList.add('open'); document.getElementById('taskTitle').focus(); };
+window.closeNewTask = function() { document.getElementById('newTaskModal').classList.remove('open'); };
+
+window.submitNewTask = async function() {
+  const title    = document.getElementById('taskTitle').value.trim();
+  const type     = document.getElementById('taskType').value;
+  const priority = document.getElementById('taskPriority').value;
+  const details  = document.getElementById('taskDetails').value.trim();
+  if (!title) { showToast('Please enter a title.'); return; }
+  try {
+    await addDoc(collection(db, 'devTasks'), {
+      title, type, priority, details,
+      status: 'open',
+      createdBy: currentDev?.uid || '',
+      createdByName: currentDev?.displayName || '?',
+      createdAt: serverTimestamp(),
+    });
+    document.getElementById('taskTitle').value   = '';
+    document.getElementById('taskDetails').value = '';
+    closeNewTask();
+    showToast('✓ Task created.');
+    loadTasks();
+    loadOverview();
+  } catch(e) { showToast('Error: ' + e.message); }
+};
+
+window.updateTaskStatus = async function(id, status) {
+  try {
+    await updateDoc(doc(db, 'devTasks', id), { status });
+    const t = tasksCache.find(x => x.id === id);
+    if (t) t.status = status;
+    renderTasks();
+  } catch(e) { showToast('Failed: ' + e.message); }
+};
+
+window.deleteTask = async function(id) {
+  if (!confirm('Delete this task?')) return;
+  try {
+    await deleteDoc(doc(db, 'devTasks', id));
+    tasksCache = tasksCache.filter(t => t.id !== id);
+    renderTasks();
+    loadOverview();
+    showToast('Task deleted.');
+  } catch(e) { showToast('Error: ' + e.message); }
+};
+
+/* ══ DEV NOTES ══ */
+function loadNotes() {
+  const feedEl = document.getElementById('devNotesFeed');
+  if (!feedEl) return;
+  if (notesUnsub) { notesUnsub(); notesUnsub = null; }
+  notesUnsub = onSnapshot(collection(db, 'devNotes'), snap => {
+    const notes = snap.docs.map(d => ({ id:d.id, ...d.data() }))
+      .sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0))
+      .slice(0, 60);
+    if (!notes.length) { feedEl.innerHTML = '<div style="color:var(--muted);font-size:.85rem">No notes yet. Post one above.</div>'; return; }
+    feedEl.innerHTML = notes.map(n => {
+      const time = n.createdAt?.toDate ? n.createdAt.toDate().toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}) : '—';
+      return `<div class="note-item">
+        <div class="note-avatar">${escHtml((n.authorName||'?')[0].toUpperCase())}</div>
+        <div style="flex:1;min-width:0">
+          <div><span class="note-author">${escHtml(n.authorName||'?')}</span><span class="note-time">${time}</span></div>
+          <div class="note-text">${escHtml(n.text||'')}</div>
+        </div>
+        ${n.authorUid === currentDev?.uid ? `<button onclick="deleteNote('${n.id}')" style="width:22px;height:22px;border-radius:5px;border:none;background:rgba(255,87,51,.08);color:var(--coral);cursor:pointer;font-size:.7rem;flex-shrink:0;transition:all .15s;align-self:flex-start" onmouseover="this.style.background='rgba(255,87,51,.2)'" onmouseout="this.style.background='rgba(255,87,51,.08)'">✕</button>` : ''}
+      </div>`;
+    }).join('');
+  }, e => { feedEl.innerHTML = `<div style="color:var(--coral);font-size:.84rem">${e.message}</div>`; });
+}
+
+window.addDevNote = async function() {
+  // works from both overview quick-note and notes page
+  const noteInput  = document.getElementById('devNoteInput');
+  const quickInput = document.getElementById('quickNoteInput');
+  const input = (noteInput && noteInput.value.trim()) ? noteInput : quickInput;
+  const text  = input?.value.trim();
+  if (!text) { showToast('Write something first.'); return; }
+  try {
+    await addDoc(collection(db, 'devNotes'), {
+      text, authorUid: currentDev?.uid || '', authorName: currentDev?.displayName || '?',
+      createdAt: serverTimestamp(),
+    });
+    if (input) input.value = '';
+    showToast('✓ Note posted.');
+  } catch(e) { showToast('Failed: ' + e.message); }
+};
+
+window.deleteNote = async function(id) {
+  try {
+    await deleteDoc(doc(db, 'devNotes', id));
+  } catch(e) { showToast('Failed: ' + e.message); }
+};
+
+/* ══ CHANGELOG ══ */
+async function loadChangelog() {
+  const el = document.getElementById('changelogList');
+  el.innerHTML = '<div style="color:var(--muted);font-size:.85rem">Loading…</div>';
+  try {
+    const snap    = await getDocs(collection(db, 'changelog'));
+    const entries = snap.docs.map(d => ({ id:d.id, ...d.data() }))
+      .sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
+    if (!entries.length) { el.innerHTML = '<div style="color:var(--muted);font-size:.85rem">No entries yet.</div>'; return; }
+    const tagColors = { feature:'var(--blue)', fix:'var(--sage)', hotfix:'var(--coral)', update:'var(--gold)' };
+    el.innerHTML = entries.map(e => {
+      const date = e.createdAt?.toDate ? e.createdAt.toDate().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}) : '—';
+      return `<div class="cl-row">
+        <div>
+          <span class="cl-version">v${escHtml(e.version||'?')}</span>
+          <span style="font-family:DM Mono,monospace;font-size:.6rem;padding:2px 8px;border-radius:4px;background:rgba(255,255,255,.06);color:${tagColors[e.tag]||'var(--muted)'};margin-left:8px;text-transform:uppercase;letter-spacing:.06em">${e.tag||'update'}</span>
+          <span class="cl-date">${date}</span>
+        </div>
+        ${e.title ? `<div style="font-weight:700;color:var(--txt);font-size:.9rem;margin-top:6px">${escHtml(e.title)}</div>` : ''}
+        <div class="cl-notes">${escHtml(e.notes||'')}</div>
+        <button onclick="deleteChangelog('${e.id}')" style="margin-top:8px;padding:4px 12px;border-radius:6px;border:1px solid rgba(255,87,51,.2);background:transparent;color:var(--coral);font-family:DM Sans,sans-serif;font-size:.75rem;font-weight:600;cursor:pointer;transition:all .15s" onmouseover="this.style.background='rgba(255,87,51,.1)'" onmouseout="this.style.background='transparent'">Delete Entry</button>
+      </div>`;
+    }).join('');
+  } catch(e) { el.innerHTML = `<div style="color:var(--coral);font-size:.84rem">${e.message}</div>`; }
+}
+
+window.publishChangelog = async function() {
+  const version = document.getElementById('clVersion').value.trim();
+  const tag     = document.getElementById('clTag').value;
+  const title   = document.getElementById('clTitle').value.trim();
+  const notes   = document.getElementById('clNotes').value.trim();
+  if (!version || !notes) { showToast('Version and notes are required.'); return; }
+  try {
+    await addDoc(collection(db, 'changelog'), {
+      version, tag, title, notes,
+      publishedBy: currentDev?.displayName || '?',
+      createdAt: serverTimestamp(),
+    });
+    document.getElementById('clVersion').value = '';
+    document.getElementById('clTitle').value   = '';
+    document.getElementById('clNotes').value   = '';
+    showToast('✓ Changelog entry published.');
+    loadChangelog();
+  } catch(e) { showToast('Error: ' + e.message); }
+};
+
+window.deleteChangelog = async function(id) {
+  if (!confirm('Delete this changelog entry?')) return;
+  try {
+    await deleteDoc(doc(db, 'changelog', id));
+    showToast('Entry deleted.');
+    loadChangelog();
+  } catch(e) { showToast('Error: ' + e.message); }
+};
+
+/* ══ DB QUICK-VIEW ══ */
+async function loadDbView() {
+  try {
+    const [uSnap, tSnap, cSnap, aSnap] = await Promise.all([
+      getDocs(collection(db, 'users')),
+      getDocs(collection(db, 'tickets')),
+      getDocs(collection(db, 'classrooms')),
+      getDocs(collection(db, 'admins')),
+    ]);
+    document.getElementById('dbStatUsers').textContent      = uSnap.size;
+    document.getElementById('dbStatTickets').textContent    = tSnap.size;
+    document.getElementById('dbStatClassrooms').textContent = cSnap.size;
+    document.getElementById('dbStatAdmins').textContent     = aSnap.size;
+
+    const users = uSnap.docs.map(d => ({ id:d.id, ...d.data() }))
+      .sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0))
+      .slice(0,10);
+    const el = document.getElementById('dbRecentUsers');
+    if (!users.length) { el.innerHTML = '<div style="color:var(--muted);font-size:.85rem">No users found.</div>'; return; }
+    el.innerHTML = users.map(u => {
+      const date = u.createdAt?.toDate ? u.createdAt.toDate().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
+      const roleColors = { student:'var(--muted)', teacher:'var(--sage)', district_admin:'var(--lavender)' };
+      return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+        <div style="width:30px;height:30px;border-radius:8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-family:Fraunces,serif;font-weight:900;font-size:.8rem;color:var(--blue);flex-shrink:0">${escHtml((u.firstName||u.email||'?')[0].toUpperCase())}</div>
+        <div style="flex:1">
+          <div style="font-size:.86rem;font-weight:600;color:var(--txt)">${escHtml((u.firstName||'')+' '+(u.lastName||'')).trim() || escHtml(u.email||'—')}</div>
+          <div style="font-size:.74rem;color:var(--muted)">${escHtml(u.email||'—')}</div>
+        </div>
+        <span style="font-family:DM Mono,monospace;font-size:.6rem;color:${roleColors[u.role]||'var(--muted)'};text-transform:uppercase;letter-spacing:.06em">${u.role||'—'}</span>
+        <span style="font-family:DM Mono,monospace;font-size:.6rem;color:var(--faint)">${date}</span>
+      </div>`;
+    }).join('');
+  } catch(e) { console.error(e); showToast('Error loading DB: ' + e.message); }
+}
+
+/* ══ TEAM ══ */
+async function loadTeam() {
+  const devEl = document.getElementById('teamDevList');
+  const jrEl  = document.getElementById('teamJrList');
+  try {
+    const snap = await getDocs(collection(db, 'admins'));
+    const all  = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+    const devs = all.filter(p => p.rank === 'developer');
+    const jrs  = all.filter(p => p.rank === 'jr_dev');
+
+    function renderTeamList(people, el) {
+      if (!people.length) { el.innerHTML = '<div style="color:var(--muted);font-size:.85rem">None yet.</div>'; return; }
+      el.innerHTML = people.map(p => {
+        const name = p.displayName || p.email || 'Unknown';
+        const rank = p.rank === 'developer' ? { label:'Developer', color:'#60A5FA', bg:'rgba(96,165,250,.12)' } : { label:'Jr. Dev', color:'#7DD3FC', bg:'rgba(125,211,252,.1)' };
+        return `<div class="team-row">
+          <div class="team-avatar" style="background:${rank.bg};overflow:hidden">
+            ${p.avatarUrl ? `<img src="${escHtml(p.avatarUrl)}" style="width:100%;height:100%;object-fit:cover" />` : `<span style="font-family:Fraunces,serif;font-weight:900;font-size:.85rem;color:${rank.color}">${escHtml(name[0].toUpperCase())}</span>`}
+          </div>
+          <div style="flex:1">
+            <div style="font-weight:700;font-size:.88rem;color:var(--txt);display:flex;align-items:center;gap:8px">
+              ${escHtml(name)}
+              <span style="font-family:DM Mono,monospace;font-size:.57rem;padding:2px 7px;border-radius:4px;background:${rank.bg};color:${rank.color};text-transform:uppercase;letter-spacing:.06em">${rank.label}</span>
+            </div>
+            <div style="font-size:.74rem;color:var(--muted);margin-top:2px">${escHtml(p.email||'—')}</div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+    renderTeamList(devs, devEl);
+    renderTeamList(jrs,  jrEl);
+  } catch(e) {
+    devEl.innerHTML = `<div style="color:var(--coral);font-size:.84rem">${e.message}</div>`;
+    jrEl.innerHTML  = '';
+  }
+}
+</script>
+</body>
+</html>
