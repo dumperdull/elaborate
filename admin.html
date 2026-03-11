@@ -103,6 +103,7 @@
   .sidebar-item.active.audit-tab{border-color:#F87171}
   .sidebar-item.active.highlights-tab{border-color:#FCD34D}
   .sidebar-item.active.staffnotes-tab{border-color:#6EE7B7}
+  .sidebar-item.active.applications-tab{border-color:#F472B6}
   .sidebar-item.active.staff-tab .sidebar-icon{background:rgba(251,146,60,.1)}
   .sidebar-item.active.announce-tab .sidebar-icon{background:rgba(52,211,153,.1)}
   .sidebar-item.active.analytics-tab .sidebar-icon{background:rgba(244,114,182,.1)}
@@ -113,6 +114,7 @@
   .sidebar-item.active.audit-tab .sidebar-icon{background:rgba(248,113,113,.1)}
   .sidebar-item.active.highlights-tab .sidebar-icon{background:rgba(252,211,77,.1)}
   .sidebar-item.active.staffnotes-tab .sidebar-icon{background:rgba(110,231,183,.1)}
+  .sidebar-item.active.applications-tab .sidebar-icon{background:rgba(244,114,182,.1)}
   .sidebar-icon{
     width:32px;height:32px;border-radius:8px;
     display:flex;align-items:center;justify-content:center;
@@ -293,6 +295,10 @@
       <button id="tabStaffBtn" class="sidebar-item staff-tab" onclick="switchAdminTab('staff')">
         <div class="sidebar-icon">🛡</div>
         <span class="sidebar-item-label">Staff</span>
+      </button>
+      <button id="tabApplicationsBtn" class="sidebar-item applications-tab" onclick="switchAdminTab('applications')">
+        <div class="sidebar-icon">📋</div>
+        <span class="sidebar-item-label">Applications <span id="appsBadge" style="display:none;background:#F472B6;color:#fff;font-size:.55rem;padding:1px 6px;border-radius:50px;margin-left:4px;font-family:DM Mono,monospace;vertical-align:middle">0</span></span>
       </button>
 
       <div class="sidebar-section">Platform</div>
@@ -493,9 +499,9 @@
               style="width:100%;padding:10px 14px;border-radius:10px;border:1.5px solid rgba(255,255,255,.08);background:#0F172A;color:#F9FAFB;font-family:'DM Sans',sans-serif;font-size:.85rem;outline:none;resize:vertical;min-height:64px;transition:border-color .2s;line-height:1.5"
               onfocus="this.style.borderColor='var(--coral)'" onblur="this.style.borderColor='var(--border2)'"></textarea>
             <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">
-              <button id="suspendBtn"   onclick="suspendUser()"   style="padding:10px 22px;border-radius:50px;border:none;background:var(--coral);color:#fff;font-family:'DM Sans',sans-serif;font-weight:600;font-size:.88rem;cursor:pointer;transition:all .2s">🔒 Suspend Account</button>
+              <button id="suspendBtn"   onclick="canDo('suspend_user')?suspendUser():showToast('⚠️ Your rank does not allow suspensions.')"   style="padding:10px 22px;border-radius:50px;border:none;background:var(--coral);color:#fff;font-family:'DM Sans',sans-serif;font-weight:600;font-size:.88rem;cursor:pointer;transition:all .2s">🔒 Suspend Account</button>
               <button id="unsuspendBtn" onclick="unsuspendUser()" style="display:none;padding:10px 22px;border-radius:50px;border:1.5px solid rgba(125,190,142,.3);background:rgba(125,190,142,.1);color:#7DBE8E;font-family:'DM Sans',sans-serif;font-weight:600;font-size:.88rem;cursor:pointer;transition:all .2s">✓ Unsuspend Account</button>
-              <button onclick="deleteUserAccount()" style="padding:10px 22px;border-radius:50px;border:1.5px solid rgba(255,87,51,.2);background:transparent;color:var(--coral);font-family:'DM Sans',sans-serif;font-weight:600;font-size:.88rem;cursor:pointer;transition:all .2s" onmouseover="this.style.background='rgba(255,87,51,.12)'" onmouseout="this.style.background='transparent'">🗑 Delete Account</button>
+              <button onclick="canDo('delete_user')?deleteUserAccount():showToast('⚠️ Only Sr. Admins can delete accounts.')" style="padding:10px 22px;border-radius:50px;border:1.5px solid rgba(255,87,51,.2);background:transparent;color:var(--coral);font-family:'DM Sans',sans-serif;font-weight:600;font-size:.88rem;cursor:pointer;transition:all .2s" onmouseover="this.style.background='rgba(255,87,51,.12)'" onmouseout="this.style.background='transparent'">🗑 Delete Account</button>
             </div>
           </div>
 
@@ -713,7 +719,45 @@
     <div class="page-header" style="border-bottom-color:rgba(251,146,60,.2)">
       <div class="page-header-eyebrow" style="color:#FB923C">People / Staff</div>
       <h1 style="color:#FB923C">Staff</h1>
-      <div class="page-header-sub">Manage admin accounts. Add staff by their Elaborate UID.</div>
+      <div class="page-header-sub">Manage admin accounts and ranks. Promote or demote staff directly from here.</div>
+    </div>
+    <!-- Rank legend -->
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px">
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:8px;background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.2)">
+        <span style="font-size:.8rem">⚙️</span>
+        <div>
+          <div style="font-family:DM Mono,monospace;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:#A78BFA">Sr. Mod</div>
+          <div style="font-size:.72rem;color:var(--muted)">Full access — promoted only</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:8px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2)">
+        <span style="font-size:.8rem">🛡</span>
+        <div>
+          <div style="font-family:DM Mono,monospace;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:#FBBF24">Mod</div>
+          <div style="font-size:.72rem;color:var(--muted)">Moderation — promoted only</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:8px;background:rgba(251,146,60,.08);border:1px solid rgba(251,146,60,.2)">
+        <span style="font-size:.8rem">🔑</span>
+        <div>
+          <div style="font-family:DM Mono,monospace;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:#FB923C">Admin</div>
+          <div style="font-size:.72rem;color:var(--muted)">Tickets + moderation</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:8px;background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.2)">
+        <span style="font-size:.8rem">💻</span>
+        <div>
+          <div style="font-family:DM Mono,monospace;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:#60A5FA">Developer</div>
+          <div style="font-size:.72rem;color:var(--muted)">Technical team</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:8px;background:rgba(125,190,142,.08);border:1px solid rgba(125,190,142,.2)">
+        <span style="font-size:.8rem">📣</span>
+        <div>
+          <div style="font-family:DM Mono,monospace;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:#7DBE8E">Marketing</div>
+          <div style="font-size:.72rem;color:var(--muted)">Content &amp; outreach</div>
+        </div>
+      </div>
     </div>
 
     <!-- Add new staff -->
@@ -1051,6 +1095,32 @@
   </div>
 </div><!-- /tabHighlights -->
 
+<!-- ══ APPLICATIONS TAB ══ -->
+<div id="tabApplications" style="display:none">
+  <div class="dash-main">
+    <div class="page-header" style="border-bottom-color:rgba(244,114,182,.2)">
+      <div class="page-header-eyebrow" style="color:#F472B6">People / Applications</div>
+      <h1 style="color:#F472B6">Applications</h1>
+      <div class="page-header-sub">Review volunteer applications submitted through the jobs page.</div>
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center">
+      <select id="appStatusFilter" onchange="renderApplications()" style="font-family:DM Sans,sans-serif;font-size:.82rem;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--txt);outline:none;cursor:pointer">
+        <option value="all">All Applications</option>
+        <option value="pending">Pending</option>
+        <option value="accepted">Accepted</option>
+        <option value="rejected">Rejected</option>
+      </select>
+      <select id="appRoleFilter" onchange="renderApplications()" style="font-family:DM Sans,sans-serif;font-size:.82rem;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--txt);outline:none;cursor:pointer">
+        <option value="all">All Roles</option>
+        <option value="jr_admin">Jr. Admin</option>
+        <option value="admin">Admin</option>
+        <option value="sr_admin">Sr. Admin</option>
+      </select>
+    </div>
+    <div id="applicationsList"><div style="padding:32px;text-align:center;color:var(--muted)">Loading…</div></div>
+  </div>
+</div><!-- /tabApplications -->
+
 <!-- ══ STAFF NOTES TAB ══ -->
 <div id="tabStaffNotes" style="display:none">
   <div class="dash-main">
@@ -1272,13 +1342,18 @@ onAuthStateChanged(auth, async user => {
   }
 
   // Build currentAdmin profile
+  const isOwnerEmail = user.email === ADMIN_EMAILS[0];
+  const adminRank    = isOwnerEmail ? 'owner' : (adminDoc?.rank || 'jr_admin');
   currentAdmin = {
     uid:         user.uid,
     email:       user.email,
     displayName: adminDoc?.displayName || user.email.split('@')[0],
     avatarUrl:   adminDoc?.avatarUrl   || '',
     color:       adminColor(user.uid),
+    rank:        adminRank,
   };
+  // Apply rank-based UI restrictions
+  applyRankRestrictions(adminRank);
 
   // If no admin doc yet, create one
   if (!adminDoc) {
@@ -1296,7 +1371,53 @@ onAuthStateChanged(auth, async user => {
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('dashboard').classList.add('active');
   loadTickets();
+  // Check for pending applications and show badge
+  try {
+    const appSnap = await getDocs(collection(db, 'jobApplications'));
+    const pending = appSnap.docs.filter(d => d.data().status === 'pending' && !d.data().read).length;
+    const badge = document.getElementById('appsBadge');
+    if (badge && pending > 0) { badge.textContent = pending; badge.style.display = 'inline'; }
+  } catch(e) {}
 });
+
+function applyRankRestrictions(rank) {
+  // Jr Admin: can only see Tickets and Staff Notes
+  // Admin: can also see Users (no settings/config tabs)
+  // Sr Admin + Owner: full access
+  const restricted = {
+    admin:     ['districts','announcements','settings','appLibrary','changelog','emailBlast','auditLog','highlights'],
+    developer: ['districts','announcements','users','settings','appLibrary','changelog','emailBlast','auditLog','highlights'],
+    marketing: ['districts','users','settings','appLibrary','changelog','emailBlast','auditLog','highlights','staffNotes'],
+    mod:       ['districts','settings','appLibrary','changelog','emailBlast','auditLog','highlights'],
+    sr_admin:  [],
+    owner:     [],
+  };
+  const hidden = restricted[rank] || [];
+  hidden.forEach(tab => {
+    const btn = document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1) + 'Btn');
+    if (btn) btn.style.display = 'none';
+  });
+  // Show a rank badge in sidebar
+  const nameEl = document.getElementById('topbarName');
+  if (nameEl && rank !== 'owner') {
+    const rInfo = STAFF_RANKS[rank];
+    if (rInfo) {
+      nameEl.innerHTML = currentAdmin.displayName + ` <span style="font-family:DM Mono,monospace;font-size:.55rem;padding:1px 6px;border-radius:3px;background:${rInfo.bg};color:${rInfo.color};vertical-align:middle;margin-left:4px">${rInfo.label}</span>`;
+    }
+  }
+}
+
+window.canDo = function(action) {
+  const rank = currentAdmin?.rank || 'jr_admin';
+  const perms = {
+    reply_ticket:   ['admin','mod','sr_admin','owner'],
+    suspend_user:   ['mod','sr_admin','owner'],
+    delete_user:    ['sr_admin','owner'],
+    manage_settings:['sr_admin','owner'],
+    manage_staff:   ['sr_admin','owner'],
+  };
+  return (perms[action] || []).includes(rank);
+};
 
 window.doAdminLogin = async function() {
   const email = document.getElementById('adminEmail').value.trim();
@@ -1824,7 +1945,7 @@ window.replyEmail = function(e, email, subject, ticketId) {
    ADMIN TABS
 ════════════════════════ */
 window.switchAdminTab = function(tab) {
-  const ALL_TABS = ['tickets','users','districts','announcements','analytics','staff','settings','appLibrary','changelog','emailBlast','auditLog','highlights','staffNotes'];
+  const ALL_TABS = ['tickets','users','districts','announcements','analytics','staff','applications','settings','appLibrary','changelog','emailBlast','auditLog','highlights','staffNotes'];
   ALL_TABS.forEach(t => {
     const el = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
     if (el) el.style.display = t === tab ? 'block' : 'none';
@@ -1843,6 +1964,7 @@ window.switchAdminTab = function(tab) {
   if (tab === 'auditLog')      loadAuditLog();
   if (tab === 'highlights')    loadHighlights();
   if (tab === 'staffNotes')    loadStaffNotes();
+  if (tab === 'applications')  loadApplications();
 };
 
 /* ════════════════════════
@@ -2449,6 +2571,16 @@ async function loadAnalytics() {
 /* ════════════════════════════════════════
    STAFF MANAGEMENT
 ════════════════════════════════════════ */
+const STAFF_RANKS = {
+  owner:     { label:'Owner',          color:'var(--coral)', bg:'rgba(255,87,51,.15)',   icon:'👑', order:0 },
+  sr_admin:  { label:'Sr. Mod',        color:'#A78BFA',      bg:'rgba(167,139,250,.15)', icon:'⚙️', order:1 },
+  mod:       { label:'Mod',            color:'#FBBF24',      bg:'rgba(251,191,36,.15)',  icon:'🛡', order:2 },
+  admin:     { label:'Admin',          color:'#FB923C',      bg:'rgba(251,146,60,.15)',  icon:'🔑', order:3 },
+  developer: { label:'Developer',      color:'#60A5FA',      bg:'rgba(96,165,250,.15)',  icon:'💻', order:4 },
+  marketing: { label:'Marketing',      color:'#7DBE8E',      bg:'rgba(125,190,142,.15)', icon:'📣', order:5 },
+};
+const RANK_ORDER = ['admin','developer','marketing','mod','sr_admin'];
+
 async function loadStaffList() {
   const listEl = document.getElementById('staffList');
   if (!listEl) return;
@@ -2456,27 +2588,54 @@ async function loadStaffList() {
   try {
     const snap = await getDocs(collection(db, 'admins'));
     if (snap.empty) { listEl.innerHTML = '<div style="color:var(--muted);font-size:.85rem">No staff members found.</div>'; return; }
-    listEl.innerHTML = snap.docs.map(d => {
-      const p    = d.data();
-      const name = p.displayName || p.email || 'Unknown';
-      const init = name[0]?.toUpperCase() || '?';
+    const members = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a,b) => (STAFF_RANKS[a.rank||'jr_admin']?.order||3) - (STAFF_RANKS[b.rank||'jr_admin']?.order||3));
+    listEl.innerHTML = members.map(p => {
+      const name    = p.displayName || p.email || 'Unknown';
+      const init    = name[0]?.toUpperCase() || '?';
       const isOwner = p.email === 'jonnyschoen29@gmail.com';
-      return `<div style="display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid var(--border)">
-        <div style="width:38px;height:38px;border-radius:10px;background:#FB923C;display:flex;align-items:center;justify-content:center;font-family:Fraunces,serif;font-weight:900;font-size:.9rem;color:var(--navy);flex-shrink:0;overflow:hidden">
-          ${p.avatarUrl ? `<img src="${escHtml(p.avatarUrl)}" style="width:100%;height:100%;object-fit:cover" />` : escHtml(init)}
+      const rank    = isOwner ? 'owner' : (p.rank || 'jr_admin');
+      const rInfo   = STAFF_RANKS[rank] || STAFF_RANKS.jr_admin;
+      // Build promote/demote dropdown
+      const rankIdx = RANK_ORDER.indexOf(rank);
+      const canPromote = !isOwner && rankIdx < RANK_ORDER.length - 1;
+      const canDemote  = !isOwner && rankIdx > 0;
+      return `<div style="display:flex;align-items:center;gap:14px;padding:16px;background:var(--bg);border-radius:10px;border:1px solid var(--border);margin-bottom:10px">
+        <div style="width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:.95rem;flex-shrink:0;overflow:hidden;background:${rInfo.bg}">
+          ${p.avatarUrl ? `<img src="${escHtml(p.avatarUrl)}" style="width:100%;height:100%;object-fit:cover;border-radius:10px" />` : rInfo.icon}
         </div>
         <div style="flex:1;min-width:0">
-          <div style="font-weight:600;color:var(--txt);font-size:.9rem;display:flex;align-items:center;gap:8px">
+          <div style="font-weight:700;color:var(--txt);font-size:.9rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
             ${escHtml(name)}
-            ${isOwner ? '<span style="font-family:DM Mono,monospace;font-size:.6rem;padding:2px 7px;border-radius:4px;background:rgba(255,87,51,.15);color:var(--coral)">OWNER</span>' : ''}
+            <span style="font-family:DM Mono,monospace;font-size:.58rem;padding:2px 8px;border-radius:4px;background:${rInfo.bg};color:${rInfo.color};letter-spacing:.06em;text-transform:uppercase">${rInfo.label}</span>
           </div>
-          <div style="font-size:.74rem;color:var(--muted);margin-top:2px">${escHtml(p.email||'—')} · UID: ${escHtml(d.id.slice(0,12))}…</div>
+          <div style="font-size:.74rem;color:var(--muted);margin-top:3px">${escHtml(p.email||'—')}</div>
         </div>
-        ${isOwner ? '' : `<button onclick="removeStaff('${d.id}','${escHtml(name)}')" style="padding:6px 14px;border-radius:6px;border:1px solid rgba(255,87,51,.2);background:transparent;color:var(--coral);font-family:DM Sans,sans-serif;font-weight:600;font-size:.76rem;cursor:pointer;transition:all .2s" onmouseover="this.style.background='rgba(255,87,51,.12)'" onmouseout="this.style.background='transparent'">Remove</button>`}
+        <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
+          ${!isOwner ? `
+            <div style="display:flex;gap:6px">
+              ${canPromote ? `<button onclick="changeStaffRank('${p.id}','${RANK_ORDER[rankIdx+1]}','${escHtml(name)}')" title="Promote" style="padding:5px 10px;border-radius:6px;border:1px solid rgba(125,190,142,.3);background:rgba(125,190,142,.08);color:#7DBE8E;font-size:.75rem;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif;transition:all .15s" onmouseover="this.style.background='rgba(125,190,142,.18)'" onmouseout="this.style.background='rgba(125,190,142,.08)'">▲ Promote</button>` : ''}
+              ${canDemote  ? `<button onclick="changeStaffRank('${p.id}','${RANK_ORDER[rankIdx-1]}','${escHtml(name)}')" title="Demote" style="padding:5px 10px;border-radius:6px;border:1px solid rgba(244,197,66,.25);background:rgba(244,197,66,.06);color:var(--gold);font-size:.75rem;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif;transition:all .15s" onmouseover="this.style.background='rgba(244,197,66,.18)'" onmouseout="this.style.background='rgba(244,197,66,.06)'">▼ Demote</button>` : ''}
+            </div>
+            <button onclick="removeStaff('${p.id}','${escHtml(name)}')" style="padding:5px 10px;border-radius:6px;border:1px solid rgba(255,87,51,.2);background:transparent;color:var(--coral);font-family:DM Sans,sans-serif;font-weight:600;font-size:.75rem;cursor:pointer;transition:all .15s" onmouseover="this.style.background='rgba(255,87,51,.12)'" onmouseout="this.style.background='transparent'">Remove</button>
+          ` : '<span style="font-family:DM Mono,monospace;font-size:.6rem;color:var(--faint)">Cannot modify</span>'}
+        </div>
       </div>`;
     }).join('');
   } catch(e) { console.error(e); listEl.innerHTML = `<div style="color:var(--coral);font-size:.84rem">Error: ${e.message}</div>`; }
 }
+
+window.changeStaffRank = async function(uid, newRank, name) {
+  const rInfo = STAFF_RANKS[newRank];
+  const direction = RANK_ORDER.indexOf(newRank) > RANK_ORDER.indexOf((await getDoc(doc(db,'admins',uid))).data()?.rank||'jr_admin') ? 'promoted' : 'demoted';
+  if (!confirm(`${direction === 'promoted' ? 'Promote' : 'Demote'} ${name} to ${rInfo?.label}?`)) return;
+  try {
+    await updateDoc(doc(db, 'admins', uid), { rank: newRank });
+    showToast(`${name} ${direction} to ${rInfo?.label}.`);
+    auditLog(`staff.${direction}`, { uid, name, newRank });
+    loadStaffList();
+  } catch(e) { showToast('Failed to update rank: ' + e.message); }
+};
 
 window.lookupAndAddStaff = async function() {
   const email   = document.getElementById('newStaffEmail').value.trim().toLowerCase();
@@ -2491,7 +2650,7 @@ window.lookupAndAddStaff = async function() {
     const uid  = match.id;
     const existing = await getDoc(doc(db, 'admins', uid));
     if (existing.exists()) { errEl.textContent = 'That user is already a staff member.'; errEl.style.display = 'block'; return; }
-    await setDoc(doc(db, 'admins', uid), { email, displayName: name || email.split('@')[0], avatarUrl: '', createdAt: serverTimestamp() });
+    await setDoc(doc(db, 'admins', uid), { email, displayName: name || email.split('@')[0], avatarUrl: '', rank: 'admin', createdAt: serverTimestamp() });
     document.getElementById('newStaffEmail').value = '';
     document.getElementById('newStaffName').value  = '';
     showToast('✓ Staff member added!');
@@ -2957,6 +3116,126 @@ window.unpinHighlight = async function(id) {
     showToast('Unpinned.');
     loadHighlights();
   } catch(e) { showToast('Failed to unpin.'); }
+};
+
+/* ════════════════════════════════════════
+   JOB APPLICATIONS
+════════════════════════════════════════ */
+let appsCache = [];
+
+async function loadApplications() {
+  const el = document.getElementById('applicationsList');
+  if (!el) return;
+  el.innerHTML = '<div style="padding:32px;text-align:center;color:var(--muted)">Loading…</div>';
+  try {
+    const snap = await getDocs(collection(db, 'jobApplications'));
+    appsCache = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
+    // Update badge
+    const pending = appsCache.filter(a => a.status === 'pending' && !a.read).length;
+    const badge = document.getElementById('appsBadge');
+    if (badge) { badge.textContent = pending; badge.style.display = pending > 0 ? 'inline' : 'none'; }
+    renderApplications();
+  } catch(e) {
+    el.innerHTML = `<div style="color:var(--coral);font-size:.84rem;padding:16px">Error: ${e.message}</div>`;
+  }
+}
+
+window.renderApplications = function() {
+  const el         = document.getElementById('applicationsList');
+  if (!el) return;
+  const statusF    = document.getElementById('appStatusFilter')?.value || 'all';
+  const roleF      = document.getElementById('appRoleFilter')?.value   || 'all';
+  const filtered   = appsCache.filter(a =>
+    (statusF === 'all' || a.status === statusF) &&
+    (roleF   === 'all' || a.role   === roleF)
+  );
+  const rankColors = { admin:'#FB923C', developer:'#60A5FA', marketing:'#7DBE8E', mod:'#FBBF24', sr_admin:'#A78BFA' };
+  const rankLabels = { admin:'Admin', developer:'Developer', marketing:'Marketing', mod:'Mod', sr_admin:'Sr. Mod' };
+  const statusColors = { pending:'#FBBF24', accepted:'#34D399', rejected:'var(--coral)' };
+  if (!filtered.length) { el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:.88rem">No applications match your filter.</div>'; return; }
+  el.innerHTML = filtered.map(a => {
+    const date = a.createdAt?.toDate ? a.createdAt.toDate().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
+    const skills = (a.skills||[]).join(', ') || '—';
+    return `<div style="background:var(--surface);border-radius:12px;border:1px solid var(--border);padding:24px;margin-bottom:14px${!a.read?';border-left:3px solid #F472B6':''}">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px">
+        <div>
+          <div style="font-weight:700;color:var(--txt);font-size:.95rem;margin-bottom:4px">${escHtml(a.firstName||'')} ${escHtml(a.lastName||'')}</div>
+          <div style="font-size:.8rem;color:var(--muted)">${escHtml(a.email||'—')} · Age ${a.age||'?'} · ${escHtml(a.availability||'—')}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span style="font-family:DM Mono,monospace;font-size:.6rem;padding:3px 10px;border-radius:4px;background:rgba(255,255,255,.07);color:${rankColors[a.role]||'var(--muted)'};text-transform:uppercase;letter-spacing:.06em">${rankLabels[a.role]||a.role||'?'}</span>
+          <span style="font-family:DM Mono,monospace;font-size:.6rem;padding:3px 10px;border-radius:4px;background:rgba(255,255,255,.06);color:${statusColors[a.status]||'var(--muted)'};text-transform:uppercase;letter-spacing:.06em">${a.status||'pending'}</span>
+          <span style="font-family:DM Mono,monospace;font-size:.6rem;color:var(--faint)">${date}</span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+        <div>
+          <div style="font-family:DM Mono,monospace;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-bottom:6px">Why they want to join</div>
+          <div style="font-size:.84rem;color:rgba(240,238,248,.7);line-height:1.55">${escHtml(a.why||'—')}</div>
+        </div>
+        <div>
+          <div style="font-family:DM Mono,monospace;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-bottom:6px">Experience</div>
+          <div style="font-size:.84rem;color:rgba(240,238,248,.7);line-height:1.55">${escHtml(a.experience||'—')}</div>
+        </div>
+      </div>
+      ${a.extra ? `<div style="margin-bottom:16px"><div style="font-family:DM Mono,monospace;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-bottom:6px">Additional notes</div><div style="font-size:.84rem;color:rgba(240,238,248,.6)">${escHtml(a.extra)}</div></div>` : ''}
+      <div style="font-size:.78rem;color:var(--muted);margin-bottom:14px">Skills: ${escHtml(skills)}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${a.status !== 'accepted' ? `<button onclick="updateAppStatus('${a.id}','accepted')" style="padding:7px 16px;border-radius:6px;border:1px solid rgba(52,211,153,.3);background:rgba(52,211,153,.1);color:#34D399;font-family:DM Sans,sans-serif;font-weight:600;font-size:.78rem;cursor:pointer;transition:all .15s">✓ Accept</button>` : ''}
+        ${a.status !== 'rejected' ? `<button onclick="updateAppStatus('${a.id}','rejected')" style="padding:7px 16px;border-radius:6px;border:1px solid rgba(255,87,51,.2);background:transparent;color:var(--coral);font-family:DM Sans,sans-serif;font-weight:600;font-size:.78rem;cursor:pointer;transition:all .15s">✕ Reject</button>` : ''}
+        ${a.status === 'accepted' ? `<button onclick="addStaffFromApp('${a.id}')" style="padding:7px 16px;border-radius:6px;border:none;background:var(--coral);color:#fff;font-family:DM Sans,sans-serif;font-weight:700;font-size:.78rem;cursor:pointer">+ Add as Staff</button>` : ''}
+        <button onclick="deleteApplication('${a.id}')" style="padding:7px 16px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:transparent;color:var(--muted);font-family:DM Sans,sans-serif;font-weight:600;font-size:.78rem;cursor:pointer;margin-left:auto">Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+  // Mark all as read
+  appsCache.filter(a => !a.read).forEach(async a => {
+    try { await updateDoc(doc(db, 'jobApplications', a.id), { read: true }); } catch(e) {}
+  });
+};
+
+window.updateAppStatus = async function(id, status) {
+  try {
+    await updateDoc(doc(db, 'jobApplications', id), { status });
+    const a = appsCache.find(x => x.id === id);
+    if (a) a.status = status;
+    renderApplications();
+    showToast(`Application ${status}.`);
+  } catch(e) { showToast('Failed: ' + e.message); }
+};
+
+window.addStaffFromApp = async function(appId) {
+  const a = appsCache.find(x => x.id === appId);
+  if (!a) return;
+  // Look up their UID by email
+  try {
+    const allSnap = await getDocs(collection(db, 'users'));
+    const match   = allSnap.docs.find(d => (d.data().email||'').toLowerCase() === a.email.toLowerCase());
+    if (!match) { showToast('No Elaborate account found for ' + a.email + '. They must sign up first.'); return; }
+    const uid = match.id;
+    const existing = await getDoc(doc(db, 'admins', uid));
+    if (existing.exists()) { showToast('They are already a staff member.'); return; }
+    await setDoc(doc(db, 'admins', uid), {
+      email: a.email,
+      displayName: a.firstName + ' ' + a.lastName,
+      avatarUrl: '',
+      rank: a.role || 'jr_admin',
+      createdAt: serverTimestamp(),
+    });
+    showToast(`✓ ${a.firstName} ${a.lastName} added as ${a.role||'jr_admin'}!`);
+    auditLog('staff.add_from_app', { email: a.email, rank: a.role });
+  } catch(e) { showToast('Error: ' + e.message); }
+};
+
+window.deleteApplication = async function(id) {
+  if (!confirm('Delete this application? This cannot be undone.')) return;
+  try {
+    await deleteDoc(doc(db, 'jobApplications', id));
+    appsCache = appsCache.filter(a => a.id !== id);
+    renderApplications();
+    showToast('Application deleted.');
+  } catch(e) { showToast('Failed: ' + e.message); }
 };
 
 /* ════════════════════════════════════════
