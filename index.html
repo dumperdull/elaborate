@@ -4064,13 +4064,15 @@ window.dismissWarning = async function() {
   60%{transform:scale(1.12) rotate(2deg)}
   100%{transform:scale(1) rotate(0)}
 }
+</style>
+<style>
 @keyframes shootingStar{
   0%{transform:translate(0,0) scaleX(1);opacity:1}
-  100%{transform:translate(420px,180px) scaleX(3);opacity:0}
+  100%{transform:translate(520px,220px) scaleX(4);opacity:0}
 }
 @keyframes starTrail{
-  0%{opacity:.9;transform:translate(0,0)}
-  100%{opacity:0;transform:translate(380px,160px)}
+  0%{opacity:.8;transform:translate(0,0) scaleX(1)}
+  100%{opacity:0;transform:translate(460px,190px) scaleX(3)}
 }
 </style>
 
@@ -4086,6 +4088,8 @@ window.dismissWarning = async function() {
   const KONAMI = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
   let konamiIdx = 0;
   document.addEventListener('keydown', e => {
+    // Don't capture konami while user is typing in a field
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
     if (e.key === KONAMI[konamiIdx]) {
       konamiIdx++;
       if (konamiIdx === KONAMI.length) {
@@ -4227,6 +4231,8 @@ window.dismissWarning = async function() {
   let typeBuffer = '';
   document.addEventListener('keydown', e => {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    // Only accumulate single printable characters
+    if (e.key.length !== 1) return;
     typeBuffer = (typeBuffer + e.key).slice(-8).toLowerCase();
     if (typeBuffer === 'homework') {
       typeBuffer = '';
