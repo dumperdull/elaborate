@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0D1B2A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Elaborate">
+<title>Get the App — Elaborate</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;0,9..144,900;1,9..144,400&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0D1B2A; --cream:#F5F0E8; --coral:#FF5733;
+  --gold:#F4C542; --sage:#7DBE8E; --lavender:#A78BFA; --sky:#38BDF8;
+}
+html,body{min-height:100%;background:var(--navy);color:#fff;font-family:'DM Sans',sans-serif}
+
+/* ── NAV ── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 32px;height:64px;
+  background:rgba(13,27,42,.92);
+  backdrop-filter:blur(16px);
+  border-bottom:1px solid rgba(255,255,255,.07);
+}
+.logo{font-family:'Fraunces',serif;font-weight:900;font-size:1.5rem;letter-spacing:-.02em;color:#fff;text-decoration:none}
+.logo span{color:var(--coral)}
+nav a.back{font-size:.85rem;font-weight:600;color:rgba(255,255,255,.4);text-decoration:none;transition:color .2s}
+nav a.back:hover{color:#fff}
+
+/* ── HERO ── */
+.hero{
+  min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:100px 24px 60px;
+  position:relative;overflow:hidden;
+  text-align:center;
+}
+/* Noise texture */
+.hero::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");
+  background-size:180px;z-index:0;
+}
+/* Glow orbs */
+.orb{position:absolute;border-radius:50%;filter:blur(80px);pointer-events:none;z-index:0}
+.orb1{width:500px;height:500px;top:-100px;right:-100px;background:radial-gradient(circle,rgba(167,139,250,.18) 0%,transparent 70%)}
+.orb2{width:400px;height:400px;bottom:-80px;left:-80px;background:radial-gradient(circle,rgba(255,87,51,.14) 0%,transparent 70%)}
+
+.hero-inner{position:relative;z-index:1;max-width:560px}
+
+/* App icon mockup */
+.app-icon-wrap{
+  width:96px;height:96px;border-radius:22px;
+  background:linear-gradient(135deg,var(--navy) 0%,#1a2d42 100%);
+  border:1.5px solid rgba(255,255,255,.12);
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 28px;
+  box-shadow:0 20px 60px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.05);
+  animation:iconDrop .7s cubic-bezier(.22,1,.36,1) both;
+}
+.app-icon-letter{
+  font-family:'Fraunces',serif;font-weight:900;font-size:2.6rem;
+  color:var(--coral);letter-spacing:-.04em;
+}
+@keyframes iconDrop{
+  from{opacity:0;transform:translateY(-24px) scale(.8)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+
+.hero h1{
+  font-family:'Fraunces',serif;font-weight:900;
+  font-size:clamp(2.4rem,6vw,3.8rem);letter-spacing:-.04em;
+  line-height:1.0;margin-bottom:16px;
+  animation:fadeUp .6s cubic-bezier(.22,1,.36,1) .1s both;
+}
+.hero h1 em{color:var(--gold);font-style:italic;font-weight:300}
+
+.hero-sub{
+  font-size:1.05rem;line-height:1.7;
+  color:rgba(255,255,255,.5);margin-bottom:36px;
+  animation:fadeUp .6s cubic-bezier(.22,1,.36,1) .18s both;
+}
+
+/* ── INSTALL BUTTON (primary) ── */
+#installBtn{
+  display:none; /* shown by JS when installable */
+  align-items:center;gap:10px;
+  background:var(--coral);color:#fff;
+  font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:700;
+  padding:15px 32px;border-radius:50px;border:none;cursor:pointer;
+  transition:all .25s;
+  box-shadow:0 8px 32px rgba(255,87,51,.4);
+  margin:0 auto 16px;
+  animation:fadeUp .5s cubic-bezier(.22,1,.36,1) .28s both;
+}
+#installBtn:hover{transform:translateY(-3px);box-shadow:0 14px 40px rgba(255,87,51,.5)}
+#installBtn svg{flex-shrink:0}
+
+/* Pill badges */
+.badges{
+  display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:40px;
+  animation:fadeUp .5s cubic-bezier(.22,1,.36,1) .22s both;
+}
+.badge{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:7px 14px;border-radius:50px;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+  font-size:.78rem;font-weight:600;color:rgba(255,255,255,.55);
+  letter-spacing:.02em;
+}
+.badge span{font-size:.9em}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── PLATFORM CARDS ── */
+.platforms{
+  display:grid;grid-template-columns:1fr 1fr;gap:14px;
+  max-width:560px;margin:0 auto 60px;
+  animation:fadeUp .5s cubic-bezier(.22,1,.36,1) .32s both;
+}
+@media(max-width:480px){.platforms{grid-template-columns:1fr}}
+
+.platform-card{
+  background:rgba(255,255,255,.04);
+  border:1.5px solid rgba(255,255,255,.08);
+  border-radius:20px;padding:24px;
+  text-align:left;transition:border-color .25s,background .25s;
+}
+.platform-card:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.15)}
+.platform-card h3{
+  font-family:'Fraunces',serif;font-size:1.1rem;font-weight:700;
+  margin-bottom:4px;display:flex;align-items:center;gap:8px;
+}
+.platform-card p{font-size:.82rem;color:rgba(255,255,255,.4);line-height:1.6;margin-bottom:16px}
+.steps{list-style:none;display:flex;flex-direction:column;gap:8px}
+.steps li{
+  display:flex;align-items:flex-start;gap:10px;
+  font-size:.8rem;color:rgba(255,255,255,.5);line-height:1.5;
+}
+.step-num{
+  flex-shrink:0;width:20px;height:20px;border-radius:50%;
+  background:rgba(255,255,255,.08);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.65rem;font-weight:700;color:rgba(255,255,255,.4);
+  margin-top:1px;font-family:'DM Mono',monospace;
+}
+.step-key{
+  display:inline-block;
+  background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.14);
+  border-radius:5px;padding:1px 6px;font-family:'DM Mono',monospace;
+  font-size:.72rem;color:rgba(255,255,255,.6);margin:0 2px;
+}
+
+/* ── FEATURES ── */
+.features-section{
+  max-width:740px;margin:0 auto 80px;padding:0 24px;
+}
+.features-section h2{
+  font-family:'Fraunces',serif;font-size:clamp(1.6rem,4vw,2.4rem);
+  font-weight:700;letter-spacing:-.03em;text-align:center;
+  margin-bottom:36px;
+  animation:fadeUp .5s cubic-bezier(.22,1,.36,1) .1s both;
+}
+.features-section h2 em{color:var(--lavender);font-style:italic;font-weight:300}
+.feature-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:16px;
+}
+@media(max-width:600px){.feature-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:380px){.feature-grid{grid-template-columns:1fr}}
+
+.feat{
+  background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.07);
+  border-radius:16px;padding:20px;
+  transition:transform .2s,border-color .2s;
+}
+.feat:hover{transform:translateY(-4px);border-color:rgba(255,255,255,.15)}
+.feat-icon{font-size:1.5rem;margin-bottom:10px}
+.feat h4{font-size:.88rem;font-weight:700;margin-bottom:4px;color:#fff}
+.feat p{font-size:.75rem;color:rgba(255,255,255,.38);line-height:1.5}
+
+/* ── FOOTER ── */
+footer{text-align:center;padding:32px;font-size:.8rem;color:rgba(255,255,255,.2);border-top:1px solid rgba(255,255,255,.06)}
+footer a{color:rgba(255,255,255,.3);text-decoration:none}
+footer a:hover{color:rgba(255,255,255,.6)}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed;bottom:32px;left:50%;transform:translateX(-50%) translateY(80px);
+  background:#1a2d42;border:1.5px solid rgba(255,255,255,.12);
+  color:#fff;padding:12px 24px;border-radius:50px;
+  font-size:.88rem;font-weight:600;
+  box-shadow:0 8px 32px rgba(0,0,0,.4);
+  transition:transform .35s cubic-bezier(.22,1,.36,1),opacity .35s;
+  opacity:0;z-index:999;white-space:nowrap;
+}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+/* ── Already-installed banner ── */
+#alreadyInstalled{
+  display:none;
+  background:rgba(125,190,142,.12);border:1.5px solid rgba(125,190,142,.3);
+  border-radius:14px;padding:14px 20px;margin-bottom:20px;
+  font-size:.85rem;color:rgba(255,255,255,.65);text-align:center;
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="logo">Elaborate<span>.</span></a>
+  <a href="/" class="back">← Back to site</a>
+</nav>
+
+<section class="hero">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="hero-inner">
+
+    <div class="app-icon-wrap">
+      <span class="app-icon-letter">E</span>
+    </div>
+
+    <h1>Elaborate<br><em>on your phone.</em></h1>
+    <p class="hero-sub">Your full learning hub — apps, notes, timer, and more — installed directly to your home screen. No App Store, no subscription. Just tap and go.</p>
+
+    <div id="alreadyInstalled">✓ Elaborate is already installed on this device!</div>
+
+    <div class="badges">
+      <span class="badge"><span>📱</span> iOS &amp; Android</span>
+      <span class="badge"><span>⚡</span> Instant install</span>
+      <span class="badge"><span>🔒</span> Free forever</span>
+      <span class="badge"><span>✦</span> No App Store needed</span>
+    </div>
+
+    <!-- Shown by JS when browser supports install prompt (Android/Chrome) -->
+    <button id="installBtn" onclick="triggerInstall()">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M12 16l-4-4h2.5V4h3v8H16l-4 4z"/><path d="M20 18H4v2h16v-2z"/></svg>
+      Add to Home Screen
+    </button>
+
+    <div class="platforms">
+      <!-- iOS -->
+      <div class="platform-card">
+        <h3>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+          iPhone &amp; iPad
+        </h3>
+        <p>Works on iOS 14+ with Safari</p>
+        <ul class="steps">
+          <li><span class="step-num">1</span><span>Open this page in <strong>Safari</strong> (not Chrome)</span></li>
+          <li><span class="step-num">2</span><span>Tap the <span class="step-key">Share</span> button at the bottom of the screen</span></li>
+          <li><span class="step-num">3</span><span>Scroll down and tap <span class="step-key">Add to Home Screen</span></span></li>
+          <li><span class="step-num">4</span><span>Tap <span class="step-key">Add</span> — done!</span></li>
+        </ul>
+      </div>
+
+      <!-- Android -->
+      <div class="platform-card">
+        <h3>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.523 15.341A5.96 5.96 0 0 0 18 13a6 6 0 0 0-6-6 6 6 0 0 0-6 6c0 .832.17 1.624.477 2.341L4 17h16l-2.477-1.659zM7.268 5.268l1.06-1.06L9.5 5.378M14.5 5.378l1.172-1.17 1.06 1.06M12 2v1.5"/></svg>
+          Android
+        </h3>
+        <p>Works on Android 5+ with Chrome</p>
+        <ul class="steps">
+          <li><span class="step-num">1</span><span>Open this page in <strong>Chrome</strong></span></li>
+          <li><span class="step-num">2</span><span>Tap the <span class="step-key">⋮</span> menu in the top right</span></li>
+          <li><span class="step-num">3</span><span>Tap <span class="step-key">Add to Home screen</span></span></li>
+          <li><span class="step-num">4</span><span>Tap <span class="step-key">Add</span> — done!</span></li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- Features -->
+<section class="features-section">
+  <h2>Everything you need,<br><em>always in your pocket</em></h2>
+  <div class="feature-grid">
+    <div class="feat"><div class="feat-icon">🧩</div><h4>App Hub</h4><p>All your learning apps organized the way you like them.</p></div>
+    <div class="feat"><div class="feat-icon">📝</div><h4>Quick Notes</h4><p>Jot down homework, ideas, and reminders instantly.</p></div>
+    <div class="feat"><div class="feat-icon">⏱</div><h4>Study Timer</h4><p>Built-in Pomodoro timer keeps you on track.</p></div>
+    <div class="feat"><div class="feat-icon">🏫</div><h4>Classroom</h4><p>Join your class, see pinned apps and announcements.</p></div>
+    <div class="feat"><div class="feat-icon">⚡</div><h4>Instant Load</h4><p>Cached for fast launch even on slow connections.</p></div>
+    <div class="feat"><div class="feat-icon">🌙</div><h4>Dark Mode</h4><p>Easy on the eyes for late-night study sessions.</p></div>
+  </div>
+</section>
+
+<footer>
+  <a href="/">← elaborate</a> &nbsp;&middot;&nbsp;
+  <a href="/legal.html?tab=privacy">Privacy</a> &nbsp;&middot;&nbsp;
+  <a href="/support.html">Support</a>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── PWA install prompt (Android/Chrome) ──
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  const btn = document.getElementById('installBtn');
+  btn.style.display = 'flex';
+});
+
+window.addEventListener('appinstalled', () => {
+  deferredPrompt = null;
+  document.getElementById('installBtn').style.display = 'none';
+  document.getElementById('alreadyInstalled').style.display = 'block';
+  showToast('🎉 Elaborate added to your home screen!');
+});
+
+window.triggerInstall = async function() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  if (outcome === 'accepted') {
+    document.getElementById('installBtn').style.display = 'none';
+    showToast('✓ Installing…');
+  }
+};
+
+// ── Detect if already running as installed PWA ──
+if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+  document.getElementById('alreadyInstalled').style.display = 'block';
+}
+
+// ── Register service worker ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3200);
+}
+</script>
+</body>
+</html>
