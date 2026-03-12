@@ -242,47 +242,40 @@
     position:relative;z-index:1;font-weight:400;
   }
   /* Search — pill, frosted glass */
-  .hub-search-wrap{max-width:480px;margin-top:30px;position:relative;z-index:1}
-  /* Glow ring container — the rotating conic ring sits here */
-  .hub-search-ring{
-    position:absolute;inset:-3px;border-radius:54px;
-    background:conic-gradient(from var(--ring-angle,0deg),
-      #FF5733, #F4C542, #7DBE8E, #A78BFA, #38BDF8, #FF5733);
-    opacity:0;transition:opacity .35s ease;
+  .hub-search-wrap{max-width:480px;margin-top:30px;position:relative;z-index:2}
+  /* Canvas ring — drawn by JS for crisp cross-browser rendering */
+  #searchRingCanvas{
+    position:absolute;
+    top:-5px;left:-5px;
+    width:calc(100% + 10px);
+    height:calc(100% + 10px);
     pointer-events:none;
-    -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 3px));
-    mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 3px));
-    filter:blur(1px);
+    border-radius:54px;
+    opacity:0;
+    transition:opacity .4s cubic-bezier(.4,0,.2,1);
+    z-index:0;
   }
-  .hub-search-ring.active{opacity:1}
-  @property --ring-angle{syntax:'<angle>';inherits:false;initial-value:0deg}
-  @keyframes ringRotate{to{--ring-angle:360deg}}
-  .hub-search-ring.active{animation:ringRotate 2s linear infinite;opacity:1}
-  /* Soft outer glow */
-  .hub-search-glow{
-    position:absolute;inset:-10px;border-radius:62px;
-    background:conic-gradient(from var(--ring-angle,0deg),
-      rgba(255,87,51,.4), rgba(244,197,66,.3), rgba(125,190,142,.3),
-      rgba(167,139,250,.35), rgba(56,189,248,.3), rgba(255,87,51,.4));
-    opacity:0;transition:opacity .4s ease;
-    pointer-events:none;
-    filter:blur(12px);
-    -webkit-mask:none;mask:none;
-  }
-  .hub-search-glow.active{animation:ringRotate 2s linear infinite;opacity:1}
+  #searchRingCanvas.active{opacity:1}
   .hub-search{
     width:100%;padding:13px 20px 13px 46px;
-    border-radius:50px;border:1.5px solid rgba(255,255,255,.1);
+    border-radius:50px;
+    border:1.5px solid rgba(255,255,255,.1);
     font-family:'DM Sans',sans-serif;font-size:.92rem;
     background:rgba(255,255,255,.08);
     backdrop-filter:blur(8px);
-    color:#fff;outline:none;transition:background .25s,border-color .25s;
+    color:#fff;outline:none;
+    transition:background .3s, border-color .3s;
     position:relative;z-index:1;
   }
   .hub-search::placeholder{color:rgba(255,255,255,.32)}
   .hub-search:focus{background:rgba(255,255,255,.13);border-color:transparent}
-  .search-icon{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.35);pointer-events:none;z-index:2;transition:color .25s}
-  .hub-search-wrap:focus-within .search-icon{color:rgba(255,255,255,.7)}
+  .search-icon{
+    position:absolute;left:15px;top:50%;
+    transform:translateY(-50%);
+    color:rgba(255,255,255,.35);
+    pointer-events:none;z-index:2;transition:color .3s;
+  }
+  .hub-search-wrap:focus-within .search-icon{color:rgba(255,255,255,.8)}
 
   /* ── HUB TABS ── */
   .hub-tabs{
@@ -515,6 +508,31 @@
   @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 
   @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes letterDrop{
+    0%{opacity:0;transform:translateY(-40px) scale(.6);filter:blur(8px)}
+    60%{opacity:1;transform:translateY(4px) scale(1.05);filter:blur(0)}
+    100%{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}
+  }
+  @keyframes splashFadeOut{
+    0%{opacity:1;transform:scale(1)}
+    100%{opacity:0;transform:scale(1.04)}
+  }
+  @keyframes dotPulse{
+    0%,100%{color:#FF5733;text-shadow:0 0 20px rgba(255,87,51,.8)}
+    50%{color:#F4C542;text-shadow:0 0 30px rgba(244,197,66,.9)}
+  }
+  .splash-letter{
+    display:inline-block;
+    opacity:0;
+    animation:letterDrop .55s cubic-bezier(.22,1,.36,1) both;
+  }
+  .splash-dot{
+    display:inline-block;
+    opacity:0;
+    animation:letterDrop .55s cubic-bezier(.22,1,.36,1) both,
+              dotPulse 1.2s ease-in-out .9s infinite;
+    color:var(--coral);
+  }
   @keyframes popIn{
     0%{opacity:0;transform:translateY(22px) scale(.94)}
     60%{opacity:1;transform:translateY(-3px) scale(1.01)}
@@ -1084,13 +1102,12 @@
       </div>
     </div>
     <div class="hub-search-wrap" id="searchWrap">
-      <div class="hub-search-glow" id="searchGlow"></div>
-      <div class="hub-search-ring" id="searchRing"></div>
+      <canvas id="searchRingCanvas"></canvas>
       <svg class="search-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-      <input class="hub-search" type="text" placeholder="Search apps…"
+      <input class="hub-search" id="hubSearchInput" type="text" placeholder="Search apps…"
         oninput="filterApps(this.value)"
-        onfocus="document.getElementById('searchRing').classList.add('active');document.getElementById('searchGlow').classList.add('active')"
-        onblur="document.getElementById('searchRing').classList.remove('active');document.getElementById('searchGlow').classList.remove('active')" />
+        onfocus="activateSearchRing(true)"
+        onblur="activateSearchRing(false)" />
     </div>
     <div class="hub-header-clip"></div>
   </div>
@@ -1851,6 +1868,340 @@ function firebaseErrMsg(code) {
 function authErr(el, msg) { el.textContent = msg; el.classList.add('show'); setTimeout(() => el.classList.remove('show'), 4000); }
 
 /* ════════════════════════════════════
+   SEARCH RING — canvas drawn
+════════════════════════════════════ */
+(function() {
+  let raf = null;
+  let angle = 0;
+  let active = false;
+  let fadeOpacity = 0;
+  let targetOpacity = 0;
+
+  const COLORS = [
+    '#FF5733', '#FF8C42', '#F4C542', '#7DBE8E',
+    '#38BDF8', '#A78BFA', '#F472B6', '#FF5733'
+  ];
+
+  function initCanvas() {
+    const canvas = document.getElementById('searchRingCanvas');
+    if (!canvas) return;
+    const wrap   = canvas.parentElement;
+    const W      = wrap.offsetWidth  + 10;
+    const H      = wrap.offsetHeight + 10;
+    const dpr    = window.devicePixelRatio || 1;
+    canvas.width  = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width  = W + 'px';
+    canvas.style.height = H + 'px';
+    return { canvas, ctx: canvas.getContext('2d'), W, H, dpr };
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
+  function drawRing(ctx, W, H, dpr, alpha) {
+    ctx.clearRect(0, 0, W * dpr, H * dpr);
+    ctx.save();
+    ctx.scale(dpr, dpr);
+
+    const pad   = 5;
+    const thick = 2.5;
+    const glow  = 14;
+    const r     = (H - pad * 2) / 2; // border radius of the pill
+
+    // Build conic-style sweep gradient by sampling colors along arc
+    // We'll use multiple gradient strokes to fake a conic on a rounded rect
+    const len   = 2 * (W - 2*pad) + 2 * (H - 2*pad) - 4 * (r * (1 - Math.PI/4) * 2); // approx perimeter
+    const steps = 60;
+
+    ctx.globalAlpha = alpha;
+
+    // Draw glow (wide, blurry)
+    for (let s = 0; s < steps; s++) {
+      const t      = (s / steps + angle / (Math.PI * 2)) % 1;
+      const ci     = t * (COLORS.length - 1);
+      const ci0    = Math.floor(ci);
+      const ci1    = Math.min(ci0 + 1, COLORS.length - 1);
+      const mix    = ci - ci0;
+      const c0     = hexToRgb(COLORS[ci0]);
+      const c1     = hexToRgb(COLORS[ci1]);
+      const rc     = Math.round(c0[0] + (c1[0]-c0[0])*mix);
+      const gc2    = Math.round(c0[1] + (c1[1]-c0[1])*mix);
+      const bc     = Math.round(c0[2] + (c1[2]-c0[2])*mix);
+      const angle2 = t * Math.PI * 2;
+      const cx     = pad + r + (W - 2*pad - 2*r) * 0.5 + (W/2 - pad - r) * Math.cos(angle2 - Math.PI/2) * 0;
+      // Just draw glow as arc segments around the rect perimeter
+      const pt     = perimPoint(W, H, pad, r, t);
+      const grad   = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, glow);
+      grad.addColorStop(0, `rgba(${rc},${gc2},${bc},.55)`);
+      grad.addColorStop(1, `rgba(${rc},${gc2},${bc},0)`);
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, glow, 0, Math.PI*2);
+      ctx.fill();
+    }
+
+    // Draw crisp ring
+    ctx.globalCompositeOperation = 'source-over';
+    const ringSteps = 120;
+    for (let s = 0; s < ringSteps - 1; s++) {
+      const t0     = (s / ringSteps + angle/(Math.PI*2)) % 1;
+      const t1     = ((s+1) / ringSteps + angle/(Math.PI*2)) % 1;
+      const p0     = perimPoint(W, H, pad, r, t0);
+      const p1     = perimPoint(W, H, pad, r, t1);
+      const ci     = t0 * (COLORS.length - 1);
+      const ci0    = Math.floor(ci);
+      const ci1    = Math.min(ci0+1, COLORS.length-1);
+      const mix    = ci - ci0;
+      const c0     = hexToRgb(COLORS[ci0]);
+      const c1     = hexToRgb(COLORS[ci1]);
+      const rc     = Math.round(c0[0]+(c1[0]-c0[0])*mix);
+      const gc2    = Math.round(c0[1]+(c1[1]-c0[1])*mix);
+      const bc     = Math.round(c0[2]+(c1[2]-c0[2])*mix);
+      ctx.strokeStyle = `rgb(${rc},${gc2},${bc})`;
+      ctx.lineWidth   = thick;
+      ctx.lineCap     = 'round';
+      ctx.beginPath();
+      ctx.moveTo(p0.x, p0.y);
+      ctx.lineTo(p1.x, p1.y);
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
+  // Get a point on the rounded-rect perimeter at normalized t [0,1]
+  function perimPoint(W, H, pad, r, t) {
+    const x0 = pad, y0 = pad, x1 = W - pad, y1 = H - pad;
+    const straight_w = x1 - x0 - 2*r;
+    const straight_h = y1 - y0 - 2*r;
+    const arc_len    = r * Math.PI / 2;
+    const segs = [
+      { type:'line', len: straight_w },  // top
+      { type:'arc',  len: arc_len, cx: x1-r, cy: y0+r, a0: -Math.PI/2, da: Math.PI/2 }, // top-right
+      { type:'line', len: straight_h },  // right
+      { type:'arc',  len: arc_len, cx: x1-r, cy: y1-r, a0: 0, da: Math.PI/2 },          // bottom-right
+      { type:'line', len: straight_w },  // bottom
+      { type:'arc',  len: arc_len, cx: x0+r, cy: y1-r, a0: Math.PI/2, da: Math.PI/2 },  // bottom-left
+      { type:'line', len: straight_h },  // left
+      { type:'arc',  len: arc_len, cx: x0+r, cy: y0+r, a0: Math.PI, da: Math.PI/2 },    // top-left
+    ];
+    const totalLen = segs.reduce((s, g) => s + g.len, 0);
+    let dist = t * totalLen;
+    // Start positions for each segment
+    const starts = [
+      { x: x0+r, y: y0 },      // top start
+      null,                      // arc top-right
+      { x: x1, y: y0+r },      // right start
+      null,                      // arc bottom-right
+      { x: x1-r, y: y1 },      // bottom start (goes left)
+      null,                      // arc bottom-left
+      { x: x0, y: y1-r },      // left start (goes up)
+      null,                      // arc top-left
+    ];
+    const dirs = [
+      {dx:1,dy:0}, null, {dx:0,dy:1}, null,
+      {dx:-1,dy:0}, null, {dx:0,dy:-1}, null
+    ];
+    for (let i = 0; i < segs.length; i++) {
+      const seg = segs[i];
+      if (dist <= seg.len) {
+        if (seg.type === 'line') {
+          const d = dirs[i];
+          const s = starts[i];
+          return { x: s.x + d.dx * dist, y: s.y + d.dy * dist };
+        } else {
+          const a = seg.a0 + seg.da * (dist / seg.len);
+          return { x: seg.cx + r * Math.cos(a), y: seg.cy + r * Math.sin(a) };
+        }
+      }
+      dist -= seg.len;
+    }
+    return { x: x0+r, y: y0 };
+  }
+
+  function hexToRgb(hex) {
+    const r = parseInt(hex.slice(1,3),16);
+    const g = parseInt(hex.slice(3,5),16);
+    const b = parseInt(hex.slice(5,7),16);
+    return [r,g,b];
+  }
+
+  let state = null;
+  function loop() {
+    if (!state) state = initCanvas();
+    if (!state) { raf = requestAnimationFrame(loop); return; }
+    // Lerp opacity
+    const speed = 0.06;
+    if (Math.abs(fadeOpacity - targetOpacity) < 0.005) {
+      fadeOpacity = targetOpacity;
+    } else {
+      fadeOpacity += (targetOpacity - fadeOpacity) * speed;
+    }
+    if (fadeOpacity > 0.001) {
+      angle = (angle + 0.018) % (Math.PI * 2); // rotation speed
+      drawRing(state.ctx, state.W, state.H, state.dpr, fadeOpacity);
+    } else {
+      state.ctx.clearRect(0, 0, state.canvas.width, state.canvas.height);
+    }
+    raf = requestAnimationFrame(loop);
+  }
+
+  window.activateSearchRing = function(on) {
+    targetOpacity = on ? 1 : 0;
+    if (!raf) loop();
+    // Reinit canvas size if needed (e.g. window resize)
+    if (on) state = initCanvas();
+  };
+
+  // Reinit on resize
+  window.addEventListener('resize', () => { state = null; });
+})();
+
+/* ════════════════════════════════════
+   HUB ENTRY SPLASH
+════════════════════════════════════ */
+(function() {
+  const WORD    = 'Elaborate';
+  const DOT     = '.';
+  const STAGGER = 70; // ms per letter
+  const HOLD    = 320; // ms after last letter before dissolve
+  let particles = [];
+  let splashRaf = null;
+  let splashActive = false;
+
+  function spawnParticles(canvas) {
+    const W = canvas.width, H = canvas.height;
+    const cx = W / 2, cy = H / 2;
+    const PALETTE = ['#FF5733','#F4C542','#7DBE8E','#A78BFA','#38BDF8','#F472B6','#fff'];
+    particles = [];
+    for (let i = 0; i < 90; i++) {
+      const angle  = Math.random() * Math.PI * 2;
+      const speed  = 2.5 + Math.random() * 5.5;
+      const size   = 2 + Math.random() * 5;
+      const color  = PALETTE[Math.floor(Math.random() * PALETTE.length)];
+      const shape  = Math.random() > 0.5 ? 'circle' : 'rect';
+      particles.push({
+        x: cx, y: cy,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - (Math.random() * 2),
+        size,
+        color,
+        shape,
+        alpha: 1,
+        decay: 0.012 + Math.random() * 0.018,
+        gravity: 0.08 + Math.random() * 0.06,
+        rot: Math.random() * Math.PI * 2,
+        rotV: (Math.random() - 0.5) * 0.12,
+      });
+    }
+  }
+
+  function drawParticles(ctx, W, H) {
+    particles = particles.filter(p => p.alpha > 0.01);
+    particles.forEach(p => {
+      p.x  += p.vx;
+      p.y  += p.vy;
+      p.vy += p.gravity;
+      p.vx *= 0.98;
+      p.alpha = Math.max(0, p.alpha - p.decay);
+      p.rot += p.rotV;
+      ctx.save();
+      ctx.globalAlpha = p.alpha;
+      ctx.fillStyle   = p.color;
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      if (p.shape === 'circle') {
+        ctx.beginPath();
+        ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size * 0.6);
+      }
+      ctx.restore();
+    });
+  }
+
+  function particleLoop(canvas, ctx) {
+    if (!splashActive) return;
+    const dpr = window.devicePixelRatio || 1;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawParticles(ctx, canvas.width, canvas.height);
+    splashRaf = requestAnimationFrame(() => particleLoop(canvas, ctx));
+  }
+
+  window.showHubSplash = function(cb) {
+    const splash  = document.getElementById('hubSplash');
+    const word    = document.getElementById('splashWord');
+    const canvas  = document.getElementById('splashCanvas');
+    if (!splash || !word || !canvas) { cb && cb(); return; }
+
+    splashActive = true;
+    splash.style.display   = 'flex';
+    splash.style.animation = 'none';
+    splash.style.opacity   = '1';
+    word.innerHTML         = '';
+
+    // Size canvas
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width  = window.innerWidth  * dpr;
+    canvas.height = window.innerHeight * dpr;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+
+    // Animate letters in
+    const letters = WORD.split('');
+    letters.forEach((ch, i) => {
+      const span = document.createElement('span');
+      span.className = 'splash-letter';
+      span.textContent = ch;
+      span.style.animationDelay = (i * STAGGER) + 'ms';
+      word.appendChild(span);
+    });
+    // Dot
+    const dotSpan = document.createElement('span');
+    dotSpan.className = 'splash-dot';
+    dotSpan.textContent = DOT;
+    dotSpan.style.animationDelay = (letters.length * STAGGER) + 'ms';
+    word.appendChild(dotSpan);
+
+    // Spawn particles after last letter appears
+    const particleDelay = letters.length * STAGGER + 100;
+    setTimeout(() => {
+      spawnParticles(canvas);
+      particleLoop(canvas, ctx);
+    }, particleDelay);
+
+    // Dissolve out
+    const totalDuration = letters.length * STAGGER + HOLD + 400;
+    setTimeout(() => {
+      splash.style.transition = 'opacity .55s cubic-bezier(.4,0,.2,1), transform .55s cubic-bezier(.4,0,.2,1)';
+      splash.style.opacity    = '0';
+      splash.style.transform  = 'scale(1.03)';
+      setTimeout(() => {
+        splashActive = false;
+        cancelAnimationFrame(splashRaf);
+        splash.style.display    = 'none';
+        splash.style.transform  = '';
+        splash.style.transition = '';
+        cb && cb();
+      }, 560);
+    }, totalDuration);
+  };
+})();
+
+/* ════════════════════════════════════
    SCROLL PARALLAX — hub header orbs
 ════════════════════════════════════ */
 window.addEventListener('scroll', () => {
@@ -1964,12 +2315,12 @@ onAuthStateChanged(auth, async (user) => {
     loadTimerSessions();
 
     const heroBtn = document.getElementById('heroMainBtn');
-    if (heroBtn) { heroBtn.textContent = 'Open My Hub →'; heroBtn.onclick = () => showScreen('hub'); }
+    if (heroBtn) { heroBtn.textContent = 'Open My Hub →'; heroBtn.onclick = () => enterHubWithSplash(); }
     // Always redirect to hub on login (unless already on hub or settings)
     const authEl = document.getElementById('auth');
     const homeEl = document.getElementById('home');
     if ((authEl && authEl.classList.contains('active')) || (homeEl && homeEl.classList.contains('active'))) {
-      showScreen('hub');
+      enterHubWithSplash();
     }
   } else {
     currentUser = null; userProfile = null;
@@ -2003,6 +2354,17 @@ window.showScreen = function(id) {
   }
 };
 window.goHome = function() { showScreen('home'); };
+window.enterHubWithSplash = function() {
+  // Only show splash when coming from outside the hub
+  const hubEl = document.getElementById('hub');
+  if (hubEl && hubEl.classList.contains('active')) {
+    // Already in hub, no splash
+    return;
+  }
+  // Hide all screens first
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  showHubSplash(() => showScreen('hub'));
+};
 window.showAuth = function(panel) {
   showScreen('auth'); switchAuthPanel(panel);
   document.getElementById('loginError').classList.remove('show');
@@ -2485,7 +2847,7 @@ window.closeOnboarding = function() {
   document.getElementById('onboardingModal').style.display = 'none';
   if (userProfile) { userProfile.onboarded = true; saveProfile(); }
   updateStudentDashboard();
-  showScreen('hub');
+  enterHubWithSplash();
 };
 
 /* ════════════════════════════════════
@@ -3617,6 +3979,24 @@ window.dismissWarning = async function() {
     <p style="font-size:.78rem;color:rgba(255,255,255,.3);margin-bottom:16px">This notice will be dismissed once you click below. If you have questions, <a href="support.html" style="color:#F4C542">contact support</a>.</p>
     <button class="warning-dismiss" onclick="dismissWarning()">I understand — Dismiss</button>
   </div>
+</div>
+
+<!-- HUB ENTRY SPLASH -->
+<div id="hubSplash" style="
+  display:none;position:fixed;inset:0;z-index:9000;
+  background:#0D1B2A;
+  align-items:center;justify-content:center;
+  overflow:hidden;
+">
+  <canvas id="splashCanvas" style="position:absolute;inset:0;width:100%;height:100%"></canvas>
+  <div id="splashWord" style="
+    position:relative;z-index:2;
+    font-family:'Fraunces',serif;font-size:clamp(3rem,8vw,7rem);
+    font-weight:900;letter-spacing:-.04em;
+    color:#fff;
+    display:flex;align-items:baseline;gap:0;
+    pointer-events:none;
+  "></div>
 </div>
 
 </body>
