@@ -84,7 +84,16 @@
   .dropdown-divider{height:1px;background:rgba(13,27,42,.07);margin:4px 0}
 
   /* SCREENS */
-  .screen{display:none;min-height:100vh} .screen.active{display:block} #auth.active{display:flex} #settings.active{display:block} .hidden{display:none!important}
+  .screen{display:none;min-height:100vh;opacity:0}
+  .screen.active{display:block;animation:screenIn .38s cubic-bezier(.22,1,.36,1) forwards}
+  #auth.active{display:flex;animation:screenFade .3s ease forwards}
+  #settings.active{display:block;animation:screenIn .38s cubic-bezier(.22,1,.36,1) forwards}
+  .hidden{display:none!important}
+  @keyframes screenIn{
+    from{opacity:0;transform:translateY(18px)}
+    to{opacity:1;transform:translateY(0)}
+  }
+  @keyframes screenFade{from{opacity:0}to{opacity:1}}
 
   /* HOMEPAGE */
   .hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:100px 24px 60px;position:relative;overflow:hidden}
@@ -160,8 +169,8 @@
   .hub-layout{display:flex;min-height:calc(100vh - 68px)}
   .hub-sidebar{width:220px;flex-shrink:0;background:var(--card-bg);border-right:1.5px solid rgba(13,27,42,.07);display:flex;flex-direction:column;position:sticky;top:68px;height:calc(100vh - 68px);overflow-y:auto;z-index:10;transition:transform .3s}
   .sidebar-section{padding:18px 14px 8px;font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
-  .sidebar-item{display:flex;align-items:center;gap:10px;padding:9px 14px;border-radius:10px;margin:0 6px 2px;cursor:pointer;font-size:.87rem;font-weight:600;color:var(--navy);transition:all .18s;border:none;background:none;width:calc(100% - 12px);text-align:left}
-  .sidebar-item:hover{background:rgba(13,27,42,.05)}
+  .sidebar-item{display:flex;align-items:center;gap:10px;padding:9px 14px;border-radius:10px;margin:0 6px 2px;cursor:pointer;font-size:.87rem;font-weight:600;color:var(--navy);transition:background .18s,color .18s,transform .18s;border:none;background:none;width:calc(100% - 12px);text-align:left;animation:slideInLeft .35s cubic-bezier(.22,1,.36,1) both}
+  .sidebar-item:hover{background:rgba(13,27,42,.05);transform:translateX(3px)}
   .sidebar-item.active{background:rgba(255,87,51,.1);color:var(--coral)}
   .sidebar-item .si-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0}
   .sidebar-item .si-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -187,6 +196,11 @@
     padding:52px 40px 56px;
     position:relative;overflow:hidden;
   }
+  .hub-greeting{animation:headerIn .5s cubic-bezier(.22,1,.36,1) .05s both}
+  .hub-sub{animation:headerIn .5s cubic-bezier(.22,1,.36,1) .12s both}
+  #studentDashboard{animation:headerIn .5s cubic-bezier(.22,1,.36,1) .18s both}
+  .hub-search-wrap{animation:headerIn .5s cubic-bezier(.22,1,.36,1) .22s both}
+  .hub-tabs{animation:fadeUp .4s cubic-bezier(.22,1,.36,1) .28s both}
   /* Noise grain overlay */
   .hub-header::before{
     content:'';position:absolute;inset:0;
@@ -198,7 +212,9 @@
     content:'';position:absolute;
     width:520px;height:520px;border-radius:50%;
     background:radial-gradient(circle, rgba(255,87,51,.22) 0%, transparent 70%);
-    top:-200px;right:-140px;pointer-events:none;z-index:0;
+    top:calc(-200px + var(--scroll-y, 0px) * .12);
+    right:-140px;pointer-events:none;z-index:0;
+    transition:none;
   }
   /* Gold accent orb bottom-left */
   .hub-header-orb2{
@@ -227,17 +243,46 @@
   }
   /* Search — pill, frosted glass */
   .hub-search-wrap{max-width:480px;margin-top:30px;position:relative;z-index:1}
+  /* Glow ring container — the rotating conic ring sits here */
+  .hub-search-ring{
+    position:absolute;inset:-3px;border-radius:54px;
+    background:conic-gradient(from var(--ring-angle,0deg),
+      #FF5733, #F4C542, #7DBE8E, #A78BFA, #38BDF8, #FF5733);
+    opacity:0;transition:opacity .35s ease;
+    pointer-events:none;
+    -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 3px));
+    mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 3px));
+    filter:blur(1px);
+  }
+  .hub-search-ring.active{opacity:1}
+  @property --ring-angle{syntax:'<angle>';inherits:false;initial-value:0deg}
+  @keyframes ringRotate{to{--ring-angle:360deg}}
+  .hub-search-ring.active{animation:ringRotate 2s linear infinite;opacity:1}
+  /* Soft outer glow */
+  .hub-search-glow{
+    position:absolute;inset:-10px;border-radius:62px;
+    background:conic-gradient(from var(--ring-angle,0deg),
+      rgba(255,87,51,.4), rgba(244,197,66,.3), rgba(125,190,142,.3),
+      rgba(167,139,250,.35), rgba(56,189,248,.3), rgba(255,87,51,.4));
+    opacity:0;transition:opacity .4s ease;
+    pointer-events:none;
+    filter:blur(12px);
+    -webkit-mask:none;mask:none;
+  }
+  .hub-search-glow.active{animation:ringRotate 2s linear infinite;opacity:1}
   .hub-search{
     width:100%;padding:13px 20px 13px 46px;
-    border-radius:50px;border:1.5px solid rgba(255,255,255,.12);
+    border-radius:50px;border:1.5px solid rgba(255,255,255,.1);
     font-family:'DM Sans',sans-serif;font-size:.92rem;
     background:rgba(255,255,255,.08);
     backdrop-filter:blur(8px);
-    color:#fff;outline:none;transition:all var(--tr);
+    color:#fff;outline:none;transition:background .25s,border-color .25s;
+    position:relative;z-index:1;
   }
   .hub-search::placeholder{color:rgba(255,255,255,.32)}
-  .hub-search:focus{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.24);box-shadow:0 0 0 3px rgba(255,255,255,.06)}
-  .search-icon{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.35);pointer-events:none}
+  .hub-search:focus{background:rgba(255,255,255,.13);border-color:transparent}
+  .search-icon{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.35);pointer-events:none;z-index:2;transition:color .25s}
+  .hub-search-wrap:focus-within .search-icon{color:rgba(255,255,255,.7)}
 
   /* ── HUB TABS ── */
   .hub-tabs{
@@ -287,12 +332,14 @@
     display:flex;flex-direction:column;
   }
   .app-card:hover{
-    box-shadow:0 8px 32px rgba(13,27,42,.14);
-    transform:translateY(-4px);
-    border-color:rgba(13,27,42,.1);
+    box-shadow:0 12px 40px rgba(13,27,42,.16);
+    transform:translateY(-6px) scale(1.01);
+    border-color:rgba(13,27,42,.08);
   }
+  .app-card:active{transform:translateY(-2px) scale(.99);transition:transform .1s}
   /* Coloured accent band at top of card */
-  .app-card-accent{height:4px;width:100%;flex-shrink:0;border-radius:0}
+  .app-card-accent{height:4px;width:100%;flex-shrink:0;border-radius:0;transition:height .22s cubic-bezier(.4,0,.2,1)}
+  .app-card:hover .app-card-accent{height:6px}
   .app-card-body{padding:22px 14px 18px;flex:1;display:flex;flex-direction:column;align-items:center}
   .app-icon{
     width:58px;height:58px;border-radius:16px;
@@ -468,7 +515,23 @@
   @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 
   @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-  @keyframes popIn{from{opacity:0;transform:scale(.88)}to{opacity:1;transform:scale(1)}}
+  @keyframes popIn{
+    0%{opacity:0;transform:translateY(22px) scale(.94)}
+    60%{opacity:1;transform:translateY(-3px) scale(1.01)}
+    100%{opacity:1;transform:translateY(0) scale(1)}
+  }
+  @keyframes slideInLeft{
+    from{opacity:0;transform:translateX(-16px)}
+    to{opacity:1;transform:translateX(0)}
+  }
+  @keyframes headerIn{
+    from{opacity:0;transform:translateY(-12px)}
+    to{opacity:1;transform:translateY(0)}
+  }
+  @keyframes fadeUp{
+    from{opacity:0;transform:translateY(20px)}
+    to{opacity:1;transform:translateY(0)}
+  }
 
   @media(max-width:768px){
     nav{padding:0 20px}
@@ -1020,9 +1083,14 @@
         <button onclick="dismissAnnouncement()" style="background:none;border:none;cursor:pointer;font-size:1rem;color:var(--muted);padding:0;flex-shrink:0;line-height:1;opacity:.6;transition:opacity .2s" title="Dismiss">✕</button>
       </div>
     </div>
-    <div class="hub-search-wrap">
+    <div class="hub-search-wrap" id="searchWrap">
+      <div class="hub-search-glow" id="searchGlow"></div>
+      <div class="hub-search-ring" id="searchRing"></div>
       <svg class="search-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-      <input class="hub-search" type="text" placeholder="Search apps…" oninput="filterApps(this.value)" />
+      <input class="hub-search" type="text" placeholder="Search apps…"
+        oninput="filterApps(this.value)"
+        onfocus="document.getElementById('searchRing').classList.add('active');document.getElementById('searchGlow').classList.add('active')"
+        onblur="document.getElementById('searchRing').classList.remove('active');document.getElementById('searchGlow').classList.remove('active')" />
     </div>
     <div class="hub-header-clip"></div>
   </div>
@@ -1783,6 +1851,29 @@ function firebaseErrMsg(code) {
 function authErr(el, msg) { el.textContent = msg; el.classList.add('show'); setTimeout(() => el.classList.remove('show'), 4000); }
 
 /* ════════════════════════════════════
+   SCROLL PARALLAX — hub header orbs
+════════════════════════════════════ */
+window.addEventListener('scroll', () => {
+  const hubEl = document.getElementById('hub');
+  if (!hubEl || !hubEl.classList.contains('active')) return;
+  const y = window.scrollY;
+  const header = hubEl.querySelector('.hub-header');
+  if (!header) return;
+  // Subtle parallax on the orb pseudo-elements via a CSS variable
+  header.style.setProperty('--scroll-y', y + 'px');
+  // Move the orb2 div
+  const orb2 = header.querySelector('.hub-header-orb2');
+  if (orb2) orb2.style.transform = `translateY(${y * 0.25}px)`;
+  // Slight scale/fade on header content as you scroll away
+  const progress = Math.min(y / 180, 1);
+  const greeting = document.getElementById('hubGreeting');
+  if (greeting) {
+    greeting.style.transform = `translateY(${y * 0.15}px)`;
+    greeting.style.opacity = 1 - progress * 0.3;
+  }
+}, { passive: true });
+
+/* ════════════════════════════════════
    AUTH STATE LISTENER
 ════════════════════════════════════ */
 onAuthStateChanged(auth, async (user) => {
@@ -1891,10 +1982,25 @@ onAuthStateChanged(auth, async (user) => {
    NAVIGATION
 ════════════════════════════════════ */
 window.showScreen = function(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.remove('active');
+    s.style.animation = 'none'; // reset so it can replay
+  });
+  const el = document.getElementById(id);
+  // Force reflow so animation replays
+  void el.offsetWidth;
+  el.style.animation = '';
+  el.classList.add('active');
   window.scrollTo({ top: 0, behavior: 'smooth' });
   if (id === 'settings') populateSettings();
+  if (id === 'hub') {
+    // Stagger sidebar items
+    document.querySelectorAll('.sidebar-item').forEach((item, i) => {
+      item.style.animation = 'none';
+      void item.offsetWidth;
+      item.style.animation = `slideInLeft .32s cubic-bezier(.22,1,.36,1) ${i * 0.04 + 0.1}s both`;
+    });
+  }
 };
 window.goHome = function() { showScreen('home'); };
 window.showAuth = function(panel) {
@@ -1969,9 +2075,22 @@ window.setTab = function(btn, tab) {
   btn.classList.add('active'); currentTab = tab;
   document.getElementById('grid-label').textContent =
     tab==='all'?'All Apps':tab==='learning'?'Learning':tab==='tools'?'Tools':'My Apps';
-  renderApps();
+  // Animate existing cards out, then re-render
+  const grid = document.getElementById('app-grid');
+  [...grid.children].forEach((c,i) => {
+    c.style.transition = `opacity .12s ${i*0.02}s, transform .12s ${i*0.02}s`;
+    c.style.opacity = '0'; c.style.transform = 'scale(.93)';
+  });
+  setTimeout(() => renderApps(), 140);
 };
-window.filterApps = function(val) { searchQuery = val.toLowerCase(); renderApps(); };
+window.filterApps = function(val) {
+  searchQuery = val.toLowerCase();
+  // Quick animate out then re-render
+  const grid = document.getElementById('app-grid');
+  [...grid.children].forEach(c => { c.style.transition='opacity .1s,transform .1s'; c.style.opacity='0'; c.style.transform='scale(.95)'; });
+  clearTimeout(window._filterTimer);
+  window._filterTimer = setTimeout(() => renderApps(), 110);
+};
 
 function renderApps() {
   if (!userProfile) return;
@@ -2024,7 +2143,12 @@ function renderApps() {
         ${app.locked ? '' : `<button class="remove-btn" onclick="removeApp(event,'${app.id}')">✕</button>`}
         <button class="fav-btn ${isFav?'active':''}" onclick="toggleFav(event,'${app.id}')" title="${isFav?'Unfavorite':'Favorite'}">★</button>
         <button style="position:absolute;bottom:10px;right:10px;width:20px;height:20px;background:rgba(13,27,42,.07);color:var(--muted);border:none;border-radius:6px;font-size:.6rem;cursor:pointer;opacity:0;transition:opacity .18s;display:flex;align-items:center;justify-content:center" class="coll-btn" onclick="showAddToCollection(event,'${app.id}')" title="Add to collection">📁</button>
-        <div class="app-icon" style="background:${app.color.val}22;box-shadow:0 4px 14px ${app.color.val}28">${app.icon}</div>
+        <div class="app-icon" style="background:${app.color.val}18;box-shadow:0 4px 14px ${app.color.val}22" id="icon-${app.id}">
+          ${app.url ? `<img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(new URL(app.url.startsWith('http')?app.url:'https://'+app.url).hostname)}&sz=64"
+            style="width:36px;height:36px;border-radius:8px;object-fit:contain"
+            onerror="this.style.display='none';this.nextSibling.style.display='flex'"
+            alt="${app.name}" /><span style="display:none;font-size:1.7rem">${app.icon}</span>` : `<span style="font-size:1.7rem">${app.icon}</span>`}
+        </div>
         <div class="app-name">${app.name}${app.locked ? ' <span style="font-size:.65rem;color:var(--muted)">🔒</span>' : ''}</div>
         ${catLabel}${collTags}
       </div>
