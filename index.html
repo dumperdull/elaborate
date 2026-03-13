@@ -2845,32 +2845,72 @@ function renderLibrary() {
 
   grid.innerHTML = '';
   filtered.forEach((app, i) => {
-    const hostname = (() => { try { return new URL('https://'+app.url.replace(/^https?:\/\//,'')).hostname.replace('www.',''); } catch { return ''; } })();
+    const hostname = (() => { try { return new URL('https://'+app.url.replace(/^https?:\/\//,'')).hostname.replace('www.',''); } catch(err) { return ''; } })();
     const alreadyAdded = userUrls.has(hostname);
+
     const card = document.createElement('div');
     card.className = 'app-card lib-card';
-    card.style.cssText = `animation-delay:${i*0.03}s;cursor:default`;
-    card.innerHTML = `
-      <div class="app-card-accent" style="background:${app.color}"></div>
-      <div class="app-card-body" style="padding:14px 10px 12px;gap:4px">
-        <div class="app-icon" style="background:${app.color}18;box-shadow:0 4px 14px ${app.color}22">
-          <img src="https://www.google.com/s2/favicons?domain=${hostname}&sz=64"
-            style="width:36px;height:36px;border-radius:8px;object-fit:contain"
-            onerror="this.style.display='none';this.nextSibling.style.display='flex'"
-            alt="${app.name}" /><span style="display:none;font-size:1.7rem">🔗</span>
-        </div>
-        <div class="app-name">${app.name}</div>
-        <div style="font-size:.65rem;color:var(--muted);line-height:1.4;margin-top:3px;text-align:center;padding:0 4px">${app.desc}</div>
-        <button onclick="libAddApp(event,'${encodeURIComponent(JSON.stringify(app))}')"
-          style="margin-top:8px;width:100%;padding:7px 0;border-radius:10px;border:none;
-            font-family:DM Sans,sans-serif;font-size:.73rem;font-weight:700;cursor:${alreadyAdded?'default':'pointer'};
-            background:${alreadyAdded?'rgba(125,190,142,.12)':'var(--navy)'};
-            color:${alreadyAdded?'var(--sage)':'#fff'};
-            transition:all .18s;-webkit-tap-highlight-color:transparent"
-          ${alreadyAdded?'disabled':''}>
-          ${alreadyAdded ? '✓ Added' : '+ Add to Hub'}
-        </button>
-      </div>`;
+    card.style.animationDelay = i*0.03 + 's';
+    card.style.cursor = 'default';
+
+    const accent = document.createElement('div');
+    accent.className = 'app-card-accent';
+    accent.style.background = app.color;
+
+    const body = document.createElement('div');
+    body.className = 'app-card-body';
+    body.style.cssText = 'padding:14px 10px 12px;gap:4px';
+
+    const iconWrap = document.createElement('div');
+    iconWrap.className = 'app-icon';
+    iconWrap.style.cssText = 'background:' + app.color + '18;box-shadow:0 4px 14px ' + app.color + '22';
+    const favicon = document.createElement('img');
+    favicon.src = 'https://www.google.com/s2/favicons?domain=' + hostname + '&sz=64';
+    favicon.style.cssText = 'width:36px;height:36px;border-radius:8px;object-fit:contain';
+    favicon.alt = app.name;
+    const fallback = document.createElement('span');
+    fallback.style.cssText = 'display:none;font-size:1.7rem';
+    fallback.textContent = '\uD83D\uDD17';
+    favicon.onerror = function() { this.style.display='none'; fallback.style.display='flex'; };
+    iconWrap.appendChild(favicon);
+    iconWrap.appendChild(fallback);
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'app-name';
+    nameEl.textContent = app.name;
+
+    const descEl = document.createElement('div');
+    descEl.style.cssText = 'font-size:.65rem;color:var(--muted);line-height:1.4;margin-top:3px;text-align:center;padding:0 4px';
+    descEl.textContent = app.desc;
+
+    const addBtn = document.createElement('button');
+    addBtn.textContent = alreadyAdded ? '\u2713 Added' : '+ Add to Hub';
+    addBtn.disabled = !!alreadyAdded;
+    addBtn.style.cssText = 'margin-top:8px;width:100%;padding:7px 0;border-radius:10px;border:none;font-family:DM Sans,sans-serif;font-size:.73rem;font-weight:700;transition:all .18s;cursor:' + (alreadyAdded?'default':'pointer') + ';background:' + (alreadyAdded?'rgba(125,190,142,.12)':'var(--navy)') + ';color:' + (alreadyAdded?'var(--sage)':'#fff');
+    if (!alreadyAdded) {
+      addBtn.addEventListener('mouseenter', function() { this.style.background='var(--coral)'; });
+      addBtn.addEventListener('mouseleave', function() { this.style.background='var(--navy)'; });
+    }
+    (function(appRef){ addBtn.addEventListener('click', async function(e) {
+      e.stopPropagation();
+      if (!userProfile) return;
+      const h = (() => { try { return new URL('https://'+appRef.url.replace(/^https?:\/\//,'')).hostname.replace('www.',''); } catch(err){ return ''; } })();
+      const already = userProfile.apps.some(function(a) {
+        try { return new URL(a.url.startsWith('http')?a.url:'https://'+a.url).hostname.replace('www.','') === h; } catch(err){ return false; }
+      });
+      if (already) return;
+      userProfile.apps.push({ id: userProfile.nextId++, name: appRef.name, url: appRef.url, color: COLORS[0], cat: ['learning','tools'].includes(appRef.cat)?appRef.cat:'tools', custom: false });
+      await saveProfile();
+      showToast('\u2713 ' + appRef.name + ' added!');
+      renderLibrary();
+    }); })(app);
+
+    body.appendChild(iconWrap);
+    body.appendChild(nameEl);
+    body.appendChild(descEl);
+    body.appendChild(addBtn);
+    card.appendChild(accent);
+    card.appendChild(body);
     grid.appendChild(card);
   });
 
