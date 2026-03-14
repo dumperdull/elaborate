@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<title>Staff Training · Elaborate</title>
+<link rel="icon" type="image/png" href="/favicon.png"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,700;0,900;1,300&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0D1B2A;--coral:#FF5733;--gold:#F4C542;--sage:#7DBE8E;--lav:#A78BFA;--sky:#38BDF8;
+  --bg:#0A0A0F;--surface:#111118;--surface2:#18181F;--border:rgba(255,255,255,.07);
+  --txt:#F0EEF8;--muted:rgba(240,238,248,.45);--faint:rgba(240,238,248,.18);
+  --radius:14px;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;overflow-x:hidden}
+.top-bar{position:fixed;top:0;left:0;right:0;height:58px;background:rgba(10,10,15,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:16px;z-index:100}
+.top-bar-logo{font-family:'Fraunces',serif;font-weight:900;font-size:1.2rem;color:var(--txt);letter-spacing:-.02em}
+.top-bar-logo span{color:var(--coral)}
+.top-bar-badge{font-family:'DM Mono',monospace;font-size:.58rem;padding:2px 8px;border-radius:4px;background:rgba(167,139,250,.15);color:var(--lav);letter-spacing:.08em;text-transform:uppercase}
+.top-bar-user{margin-left:auto;font-size:.82rem;color:var(--muted);display:flex;align-items:center;gap:10px}
+.top-bar-avatar{width:30px;height:30px;border-radius:8px;background:rgba(167,139,250,.2);display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:900;font-size:.8rem;color:var(--lav)}
+.layout{display:flex;padding-top:58px;min-height:100vh}
+.phase-rail{width:260px;flex-shrink:0;border-right:1px solid var(--border);padding:32px 0;position:sticky;top:58px;height:calc(100vh - 58px);overflow-y:auto}
+.rail-title{font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);padding:0 22px;margin-bottom:18px}
+.phase-item{display:flex;align-items:center;gap:12px;padding:12px 22px;cursor:pointer;border-left:2px solid transparent;transition:all .18s}
+.phase-item:hover{background:rgba(255,255,255,.03)}
+.phase-item.active{background:rgba(167,139,250,.07);border-left-color:var(--lav)}
+.phase-item.completed{border-left-color:var(--sage)}
+.phase-item.locked{opacity:.35;cursor:not-allowed;pointer-events:none}
+.phase-dot{width:28px;height:28px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;font-family:'DM Mono',monospace;background:rgba(255,255,255,.06);color:var(--muted);transition:all .2s}
+.phase-item.active .phase-dot{background:rgba(167,139,250,.2);color:var(--lav)}
+.phase-item.completed .phase-dot{background:rgba(125,190,142,.15);color:var(--sage)}
+.phase-meta .phase-name{font-size:.85rem;font-weight:600;color:var(--txt)}
+.phase-meta .phase-sub{font-size:.7rem;color:var(--muted);margin-top:1px}
+.rail-divider{height:1px;background:var(--border);margin:16px 22px}
+.chat-rail-item{display:flex;align-items:center;gap:12px;padding:12px 22px;cursor:pointer;border-left:2px solid transparent;transition:all .18s}
+.chat-rail-item:hover{background:rgba(255,255,255,.03)}
+.chat-rail-item.active{background:rgba(244,197,66,.06);border-left-color:var(--gold)}
+.chat-dot{width:28px;height:28px;border-radius:8px;background:rgba(244,197,66,.12);display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0;position:relative}
+.chat-unread{position:absolute;top:-3px;right:-3px;width:8px;height:8px;border-radius:50%;background:var(--coral);border:1.5px solid var(--bg);display:none}
+.main{flex:1;min-width:0;padding:40px 48px 80px}
+.phase-header{margin-bottom:32px}
+.phase-eyebrow{font-family:'DM Mono',monospace;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--lav);margin-bottom:10px}
+.phase-header h1{font-family:'Fraunces',serif;font-size:2rem;font-weight:900;color:var(--txt);letter-spacing:-.02em;line-height:1.1}
+.phase-header p{font-size:.9rem;color:var(--muted);margin-top:10px;line-height:1.6;max-width:640px}
+.progress-track{height:4px;background:rgba(255,255,255,.07);border-radius:2px;margin-bottom:36px;overflow:hidden}
+.progress-fill{height:100%;border-radius:2px;transition:width .4s cubic-bezier(.4,0,.2,1)}
+.lesson-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px 30px;margin-bottom:16px}
+.lesson-label{font-family:'DM Mono',monospace;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
+.lesson-title{font-family:'Fraunces',serif;font-size:1.1rem;font-weight:700;color:var(--txt);margin-bottom:14px}
+.lesson-body{font-size:.88rem;color:rgba(240,238,248,.72);line-height:1.75}
+.lesson-body p{margin-bottom:10px}
+.lesson-body p:last-child{margin-bottom:0}
+.lesson-body strong{color:var(--txt);font-weight:700}
+.example-box{background:var(--surface2);border-left:3px solid var(--lav);border-radius:0 8px 8px 0;padding:12px 16px;margin:14px 0;font-family:'DM Mono',monospace;font-size:.78rem;color:rgba(240,238,248,.75);line-height:1.65}
+.example-box.good{border-left-color:var(--sage)}
+.example-box.bad{border-left-color:var(--coral)}
+.tag{display:inline-block;font-family:'DM Mono',monospace;font-size:.6rem;padding:2px 7px;border-radius:4px;margin-right:4px;font-weight:500}
+.tag.good{background:rgba(125,190,142,.12);color:var(--sage)}
+.tag.bad{background:rgba(255,87,51,.1);color:var(--coral)}
+.quiz-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px 30px;margin-top:28px}
+.quiz-title{font-family:'Fraunces',serif;font-size:1.1rem;font-weight:700;color:var(--txt);margin-bottom:6px}
+.quiz-sub{font-size:.82rem;color:var(--muted);margin-bottom:24px}
+.quiz-q{margin-bottom:24px}
+.quiz-q-text{font-size:.9rem;font-weight:600;color:var(--txt);margin-bottom:12px;line-height:1.5}
+.quiz-options{display:flex;flex-direction:column;gap:8px}
+.quiz-opt{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border-radius:10px;border:1.5px solid var(--border);cursor:pointer;transition:all .18s;background:transparent;text-align:left;width:100%;font-family:'DM Sans',sans-serif;font-size:.85rem;color:var(--txt)}
+.quiz-opt:hover:not(:disabled){border-color:rgba(167,139,250,.4);background:rgba(167,139,250,.05)}
+.quiz-opt.selected{border-color:var(--lav);background:rgba(167,139,250,.1)}
+.quiz-opt.correct{border-color:var(--sage)!important;background:rgba(125,190,142,.1)!important;color:var(--sage)!important}
+.quiz-opt.wrong{border-color:var(--coral)!important;background:rgba(255,87,51,.08)!important;color:var(--coral)!important}
+.quiz-opt-letter{width:22px;height:22px;border-radius:6px;flex-shrink:0;background:rgba(255,255,255,.07);font-family:'DM Mono',monospace;font-size:.7rem;font-weight:700;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.quiz-feedback{font-size:.82rem;margin-top:10px;padding:10px 14px;border-radius:8px;display:none}
+.quiz-feedback.show{display:block}
+.quiz-feedback.ok{background:rgba(125,190,142,.1);color:var(--sage)}
+.quiz-feedback.no{background:rgba(255,87,51,.08);color:var(--coral)}
+.quiz-submit{margin-top:20px;padding:12px 28px;border-radius:50px;border:none;background:var(--lav);color:#fff;font-family:'DM Sans',sans-serif;font-weight:700;font-size:.88rem;cursor:pointer;transition:all .2s}
+.quiz-submit:hover:not(:disabled){background:#9070f0;transform:translateY(-1px)}
+.quiz-submit:disabled{opacity:.35;cursor:not-allowed}
+.complete-btn{display:flex;align-items:center;gap:16px;margin-top:32px;padding:20px 28px;border-radius:14px;border:1.5px solid rgba(167,139,250,.3);width:100%;background:linear-gradient(135deg,rgba(167,139,250,.12),rgba(56,189,248,.08));cursor:pointer;transition:all .22s;font-family:'DM Sans',sans-serif}
+.complete-btn:hover{background:linear-gradient(135deg,rgba(167,139,250,.22),rgba(56,189,248,.16));transform:translateY(-2px)}
+.complete-btn-text{text-align:left;flex:1}
+.complete-btn-title{font-weight:700;color:var(--txt);font-size:.95rem}
+.complete-btn-sub{font-size:.75rem;color:var(--muted);margin-top:3px}
+.complete-btn-arrow{font-size:1.3rem;color:var(--lav)}
+.completion-banner{background:linear-gradient(135deg,rgba(125,190,142,.1),rgba(56,189,248,.07));border:1.5px solid rgba(125,190,142,.25);border-radius:16px;padding:32px;text-align:center;margin-top:24px}
+.completion-star{font-size:2.5rem;margin-bottom:12px}
+.completion-title{font-family:'Fraunces',serif;font-size:1.6rem;font-weight:900;color:var(--sage);margin-bottom:8px}
+.completion-sub{font-size:.88rem;color:var(--muted);line-height:1.6}
+.chat-view{display:flex;flex-direction:column;height:calc(100vh - 58px - 80px);min-height:500px}
+.chat-header{margin-bottom:20px}
+.chat-header h1{font-family:'Fraunces',serif;font-size:1.6rem;font-weight:900;color:var(--txt)}
+.chat-header p{font-size:.85rem;color:var(--muted);margin-top:6px}
+.chat-messages{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:20px;background:var(--surface);border-radius:14px;border:1px solid var(--border);margin-bottom:16px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.08) transparent;min-height:200px}
+.msg{display:flex;gap:10px;max-width:82%}
+.msg.mine{flex-direction:row-reverse;align-self:flex-end}
+.msg-avatar{width:30px;height:30px;border-radius:8px;flex-shrink:0;background:rgba(167,139,250,.2);display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:900;font-size:.75rem;color:var(--lav)}
+.msg.mine .msg-avatar{background:rgba(255,87,51,.15);color:var(--coral)}
+.msg-bubble{background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:10px 14px;font-size:.85rem;color:var(--txt);line-height:1.55}
+.msg.mine .msg-bubble{background:rgba(167,139,250,.13);border-color:rgba(167,139,250,.2)}
+.msg-meta{font-size:.65rem;color:var(--faint);margin-top:4px}
+.msg.mine .msg-meta{text-align:right}
+.msg-system{align-self:center;text-align:center;font-family:'DM Mono',monospace;font-size:.68rem;color:var(--faint);padding:6px 14px;background:rgba(255,255,255,.03);border-radius:50px;margin:4px 0;max-width:100%}
+.chat-input-row{display:flex;gap:10px}
+.chat-input{flex:1;padding:12px 18px;border-radius:12px;border:1.5px solid var(--border);background:var(--surface);color:var(--txt);font-family:'DM Sans',sans-serif;font-size:.88rem;outline:none;resize:none;transition:border-color .18s;min-height:44px;max-height:120px;line-height:1.5}
+.chat-input:focus{border-color:rgba(167,139,250,.4)}
+.chat-send{padding:0 20px;border-radius:12px;border:none;background:var(--lav);color:#fff;font-family:'DM Sans',sans-serif;font-weight:700;font-size:.85rem;cursor:pointer;transition:all .18s;height:44px;flex-shrink:0}
+.chat-send:hover{background:#9070f0}
+.chat-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--faint);text-align:center;font-size:.85rem}
+.locked-view{text-align:center;padding:80px 40px;color:var(--muted)}
+.locked-icon{font-size:3rem;margin-bottom:16px;opacity:.4}
+.spinner-wrap{display:flex;align-items:center;justify-content:center;min-height:60vh}
+.spinner{width:32px;height:32px;border:2.5px solid rgba(255,255,255,.08);border-top-color:var(--lav);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast-container{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{background:#1e1e2e;border:1px solid var(--border);border-radius:10px;padding:11px 20px;font-size:.83rem;font-weight:600;color:var(--txt);box-shadow:0 8px 32px rgba(0,0,0,.4);animation:toastIn .3s cubic-bezier(.22,1,.36,1) both;white-space:nowrap}
+@keyframes toastIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:700px){.phase-rail{display:none}.main{padding:24px 18px 60px}}
+</style>
+</head>
+<body>
+<div class="top-bar">
+  <span class="top-bar-logo">elaborate<span>.</span></span>
+  <span class="top-bar-badge">Staff Training</span>
+  <div class="top-bar-user">
+    <span id="topBarName">Loading…</span>
+    <div class="top-bar-avatar" id="topBarAvatar">?</div>
+  </div>
+</div>
+<div class="layout">
+  <aside class="phase-rail" id="phaseRail">
+    <div class="rail-title">Training Phases</div>
+    <div id="phaseNav"></div>
+    <div class="rail-divider"></div>
+    <div class="chat-rail-item" id="chatRailItem" onclick="showView('chat')">
+      <div class="chat-dot">💬<div class="chat-unread" id="chatUnreadDot"></div></div>
+      <div>
+        <div style="font-size:.85rem;font-weight:600;color:var(--txt)">Staff Chat</div>
+        <div style="font-size:.7rem;color:var(--muted);margin-top:1px">Talk with a real staff member</div>
+      </div>
+    </div>
+  </aside>
+  <main class="main" id="mainArea">
+    <div class="spinner-wrap"><div class="spinner"></div></div>
+  </main>
+</div>
+<div class="toast-container" id="toastContainer"></div>
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, addDoc,
+         query, orderBy, onSnapshot, serverTimestamp, getDocs }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const app = initializeApp({apiKey:"AIzaSyA4f0NpoH1LLmbejrNmOgIxbD__MIUZkGs",authDomain:"elaborate-edc16.firebaseapp.com",projectId:"elaborate-edc16"});
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+/* ── CONTENT ── */
+const PHASES = [
+  { id:'p1', title:'Communicating with Users', sub:'Tone, empathy and ticket etiquette', color:'#A78BFA',
+    lessons:[
+      { title:'The Tone Every Reply Needs',
+        body:`<p>Every message you send represents the whole Elaborate team. Users come to support frustrated, confused, or upset. Your job is to <strong>de-escalate and solve</strong> — in that order.</p><p>Write as if you are talking to a smart 13-year-old having a bad day. Be warm, be clear, never condescending.</p><div class="example-box bad">Bad: "This is in the FAQ. Did you even read it?"</div><div class="example-box good">Good: "Great question — this one trips people up. Here's exactly how it works: …"</div><p>Even when the user is wrong, <strong>acknowledge before correcting</strong>. People listen after they feel heard.</p>`
+      },
+      { title:'Opening and Closing a Ticket Reply',
+        body:`<p>Every good reply follows the same structure: <strong>acknowledge → answer → close</strong>. Never skip a step.</p><div class="example-box"><strong>Acknowledge:</strong> "Thanks for reaching out!" or "Sorry to hear you're running into this."<br><strong>Answer:</strong> The actual solution, clearly and completely.<br><strong>Close:</strong> "Let us know if anything else comes up!"</div><p>Never close a ticket if the user's problem is unresolved. If you don't know, say so honestly and give a timeframe.</p><div class="example-box bad">Bad: "I'll look into it." — then nothing.</div><div class="example-box good">Good: "I'm not 100% sure — let me check with the team and get back to you by tomorrow."</div>`
+      },
+      { title:'Handling Angry or Rude Users',
+        body:`<p>Some users will be rude. <strong>Do not match their energy.</strong> Your response should be so measured that there is nothing to push against.</p><div class="example-box bad">Bad: "There's no need to be rude. We are trying to help you."</div><div class="example-box good">Good: "I totally understand how frustrating this must be — let's get this sorted right now."</div><p>Skip the lecture, get to the solution. If a user is genuinely abusive, escalate to a Sr. Admin and disengage.</p>`
+      }
+    ],
+    quiz:[
+      { q:'A user writes: "This app is broken and nobody ever helps me." What is your first move?',
+        opts:['Correct them — the app is fine','Acknowledge their frustration, then address the issue','Ask them to calm down first','Escalate immediately'],
+        correct:1, feedback:'Always acknowledge first. People listen after they feel heard, not before.' },
+      { q:'You do not know the answer to a user question. What do you do?',
+        opts:['Close the ticket','Make your best guess','Tell them honestly you will find out, give a timeframe, and follow through','Tell them to check the FAQ'],
+        correct:2, feedback:'Honesty plus a commitment to follow up builds far more trust than a wrong answer.' },
+      { q:'Which closing line is best after resolving an issue?',
+        opts:['"Let me know if there is anything else I can help with!"','"Closing this ticket now."','"Good luck."','"Resolved per company policy."'],
+        correct:0, feedback:'Warm, open-ended closings invite users back without pressure.' }
+    ]
+  },
+  { id:'p2', title:'Using the Admin Portal', sub:'Tools, permissions and workflow', color:'#38BDF8',
+    lessons:[
+      { title:'The Tab Structure',
+        body:`<p>Know which tab does what before you start working. Opening the wrong section and making changes is a common new-staff mistake.</p><div class="example-box"><strong>Tickets</strong> — user support requests. Your primary workspace.<br><strong>Users</strong> — look up accounts, issue warnings, suspend if needed.<br><strong>Staff</strong> — manage the team. Only Sr. Admins and above can promote or demote.<br><strong>Announcements</strong> — push messages to all users.<br><strong>Audit Log</strong> — every admin action is recorded here. There is no "off the record."</div><p>Every action you take is logged with your name, rank, and timestamp. Act accordingly.</p>`
+      },
+      { title:'Rank Permissions',
+        body:`<p>Your rank determines what actions you can take. Acting outside your rank — even with good intentions — undermines the team.</p><div class="example-box"><span class="tag bad">Jr. Admin</span> View and reply to tickets. No suspensions, no staff changes.<br><br><span class="tag" style="background:rgba(251,191,36,.1);color:#FBBF24">Mod</span> Issue warnings, mark tickets resolved.<br><br><span class="tag" style="background:rgba(251,146,60,.12);color:#FB923C">Admin</span> Suspend accounts, manage most settings.<br><br><span class="tag" style="background:rgba(167,139,250,.12);color:#A78BFA">Sr. Admin</span> Full access except owner-level config.</div><p>If you are unsure whether an action is within your rank, <strong>ask before acting</strong>.</p>`
+      },
+      { title:'Ticket Workflow',
+        body:`<p>Every ticket should follow the same lifecycle. Skipping steps is how things fall through the cracks.</p><p><strong>1. Read the full ticket</strong> before typing a word. Understand exactly what the user is reporting.</p><p><strong>2. Investigate</strong> — check the Users tab and Audit Log if something seems off.</p><p><strong>3. Reply with a complete answer</strong> — don't send half a response and wait.</p><p><strong>4. Mark Resolved</strong> only when the issue is actually fixed, not just when you replied.</p><div class="example-box bad">Bad: Reply "I'll look into it" then mark resolved and never follow up.</div><div class="example-box good">Good: Investigate fully, reply with solution, confirm with user, then mark resolved.</div>`
+      }
+    ],
+    quiz:[
+      { q:'A user reports their account was suspended but they say they did nothing wrong. As a Jr. Admin, your first step is:',
+        opts:['Unsuspend them immediately','Look up their account and the audit log, then reply with what you find before acting','Tell them to appeal via email','Close the ticket — suspensions are above your level'],
+        correct:1, feedback:'Investigate before acting. A Jr. Admin should not unsuspend without understanding why the suspension happened.' },
+      { q:'You notice a Sr. Admin made what looks like an error in the Users tab. You:',
+        opts:['Fix it yourself','Ignore it','Bring it up directly with the Sr. Admin or owner via Staff Chat or Staff Notes','Post about it in announcements'],
+        correct:2, feedback:'Escalate internally and respectfully. Never silently fix another staff member action without discussion.' },
+      { q:'When should you mark a ticket as Resolved?',
+        opts:['As soon as you send a reply','After the user confirms fixed, or after a reasonable time with no follow-up needed','At the end of your shift','Only Sr. Admins decide this'],
+        correct:1, feedback:'Resolved means the issue is actually resolved, not just that you replied.' }
+    ]
+  },
+  { id:'p3', title:'Moderation Judgement', sub:'Edge cases, escalation and decisions', color:'#F4C542',
+    lessons:[
+      { title:'The Escalation Ladder',
+        body:`<p>Not every decision is yours to make. Knowing when to escalate is as important as knowing how to resolve things yourself.</p><p><strong>Escalate when:</strong></p><div class="example-box">The user is threatening or abusive and will not stop.<br>The action required is above your rank.<br>You are genuinely unsure and the stakes are high (account deletion, legal concern).<br>Something looks like coordinated abuse (multiple accounts, spam patterns).<br>A staff member is involved in the complaint.</div><p>Escalation is not failure. A confident wrong decision is worse than a careful escalation.</p>`
+      },
+      { title:'Warnings vs. Suspensions',
+        body:`<p>These are not interchangeable. Use the right tool for the situation.</p><p>A <strong>warning</strong> is for a first or minor infraction. It should name the specific behavior and what happens if it continues.</p><p>A <strong>suspension</strong> is for repeated violations, serious single violations, or when a warning was already ignored. Always document the reason.</p><div class="example-box bad">Bad: Suspending someone for a single mildly rude support message.</div><div class="example-box good">Good: Warning first, document it, suspend only if the behavior continues or the violation is severe.</div><p>Suspensions affect real students and teachers. Be certain before acting.</p>`
+      },
+      { title:'The Three Gut-Check Questions',
+        body:`<p>Before any significant action, ask yourself three things:</p><div class="example-box"><strong>1. Would I be comfortable if the owner saw exactly what I did and why?</strong><br>Yes? Proceed. No? Pause and think.<br><br><strong>2. Am I acting on facts or assumptions?</strong><br>Always facts. If you need more information, get it before acting.<br><br><strong>3. Is this reversible?</strong><br>Hard-to-undo actions (deletion, suspension) need extra certainty. Easy-to-undo actions can move faster.</div><p>These questions add 30 seconds and prevent the mistakes that take hours to clean up.</p>`
+      }
+    ],
+    quiz:[
+      { q:'A teacher reports another teacher in their district is sending inappropriate messages. You:',
+        opts:['Reply saying you will monitor the situation','Immediately suspend the accused teacher','Escalate to a Sr. Admin immediately','Tell the reporter to contact their district admin directly'],
+        correct:2, feedback:'Interpersonal misconduct in a school context is always an escalation case. Do not handle it alone.' },
+      { q:'You have warned a user twice for the same behavior. They do it again. You:',
+        opts:['Warn them a third time with stronger language','Suspend them — the warnings have been given and ignored','Ignore it since it is not hurting anyone','Delete their account'],
+        correct:1, feedback:'Two warnings followed by repeated behavior is the textbook escalation to suspension. Document your reason.' },
+      { q:'A Sr. Admin verbally asks you to delete a user account but there is no written instruction. You:',
+        opts:['Delete it — you trust the Sr. Admin','Refuse entirely','Ask the Sr. Admin to confirm in Staff Notes or in writing before you proceed','Delete it and log it under your name'],
+        correct:2, feedback:'Irreversible actions need a paper trail. Always get written confirmation before deleting anything.' }
+    ]
+  }
+];
+
+/* ── STATE ── */
+let currentUser = null;
+let progress = null;
+let progressRef = null;
+let currentView = 'p1';
+let quizAnswers = {};
+let quizLocked = {};
+
+/* ── AUTH ── */
+onAuthStateChanged(auth, async user => {
+  if (!user) { window.location.href = '/index.html'; return; }
+  currentUser = user;
+
+  // ── ACCESS GATE ──
+  // Only users with an existing trainingProgress doc (created by an admin
+  // when they enroll from the Applications tab) can access this page.
+  progressRef = doc(db, 'trainingProgress', user.uid);
+  const snap = await getDoc(progressRef);
+
+  if (!snap.exists()) {
+    // Not enrolled — show a clear denial screen, don't create anything
+    document.getElementById('mainArea').innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:70vh;text-align:center;padding:40px">
+        <div style="font-size:3rem;margin-bottom:20px">🔒</div>
+        <h2 style="font-family:'Fraunces',serif;font-size:1.6rem;font-weight:900;color:var(--txt);margin-bottom:12px">Not enrolled in training</h2>
+        <p style="font-size:.9rem;color:var(--muted);max-width:400px;line-height:1.65;margin-bottom:28px">
+          This page is only accessible to staff members who have been accepted and enrolled by an admin.
+          If you believe this is a mistake, contact <strong>jonnyschoen29@gmail.com</strong>.
+        </p>
+        <a href="/index.html" style="padding:12px 28px;border-radius:50px;background:var(--lav);color:#fff;font-family:'DM Sans',sans-serif;font-weight:700;font-size:.88rem;text-decoration:none;transition:all .2s">← Back to Elaborate</a>
+      </div>`;
+    document.getElementById('phaseRail').style.display = 'none';
+    return;
+  }
+
+  // Enrolled — set up the page normally
+  const name = user.displayName || user.email;
+  document.getElementById('topBarName').textContent = name;
+  document.getElementById('topBarAvatar').textContent = (name[0]||'?').toUpperCase();
+
+  onSnapshot(progressRef, snap2 => {
+    progress = snap2.data();
+    renderRail();
+    if (currentView !== 'chat') renderPhase(currentView);
+  });
+  startChatListener();
+});
+
+/* ── RAIL ── */
+function renderRail() {
+  if (!progress) return;
+  document.getElementById('phaseNav').innerHTML = PHASES.map((ph, i) => {
+    const st = (progress.phases||{})[ph.id]?.status || 'locked';
+    const dot = st==='completed'?'✓':st==='locked'?'🔒':String(i+1);
+    const cls = (st==='completed'?'completed':st==='locked'?'locked':'') + (currentView===ph.id?' active':'');
+    return `<div class="phase-item ${cls}" onclick="showView('${ph.id}')">
+      <div class="phase-dot">${dot}</div>
+      <div class="phase-meta">
+        <div class="phase-name">Phase ${i+1}: ${ph.title}</div>
+        <div class="phase-sub">${st==='completed'?'Complete':st==='in_progress'?'In progress':'Locked'}</div>
+      </div></div>`;
+  }).join('');
+  document.getElementById('chatRailItem').className = 'chat-rail-item'+(currentView==='chat'?' active':'');
+}
+
+/* ── SHOW VIEW ── */
+window.showView = function(id) {
+  if (!progress) return;
+  if (id !== 'chat') {
+    const st = (progress.phases||{})[id]?.status || 'locked';
+    if (st === 'locked') return;
+  }
+  currentView = id;
+  renderRail();
+  if (id === 'chat') renderChatView();
+  else renderPhase(id);
+};
+
+/* ── RENDER PHASE ── */
+function renderPhase(phaseId) {
+  const main = document.getElementById('mainArea');
+  const ph = PHASES.find(p => p.id === phaseId);
+  if (!ph || !progress) return;
+  const phData = (progress.phases||{})[phaseId] || {status:'locked',quizPassed:false};
+  if (phData.status === 'locked') {
+    main.innerHTML = `<div class="locked-view"><div class="locked-icon">🔒</div><p>Complete the previous phase to unlock this one.</p></div>`;
+    return;
+  }
+  const phIdx = PHASES.findIndex(p => p.id === phaseId);
+  const completedCount = PHASES.filter(p => (progress.phases||{})[p.id]?.status==='completed').length;
+  const pct = Math.round((completedCount / PHASES.length) * 100);
+
+  let html = `<div class="phase-header">
+    <div class="phase-eyebrow">Phase ${phIdx+1} of ${PHASES.length}</div>
+    <h1>${ph.title}</h1>
+    <p>${ph.sub}</p>
+  </div>
+  <div class="progress-track"><div class="progress-fill" style="width:${pct}%;background:linear-gradient(90deg,${ph.color},${ph.color}88)"></div></div>`;
+
+  ph.lessons.forEach((l, li) => {
+    html += `<div class="lesson-card">
+      <div class="lesson-label">Lesson ${li+1}</div>
+      <div class="lesson-title">${l.title}</div>
+      <div class="lesson-body">${l.body}</div>
+    </div>`;
+  });
+
+  const passed = phData.quizPassed;
+  if (!passed) {
+    html += buildQuiz(phaseId, ph, phIdx);
+  }
+  if (passed && phData.status !== 'completed') {
+    html += `<button class="complete-btn" onclick="completePhase('${phaseId}')">
+      <div class="complete-btn-text">
+        <div class="complete-btn-title">Mark Phase ${phIdx+1} Complete</div>
+        <div class="complete-btn-sub">You passed the quiz — lock in your progress and continue</div>
+      </div>
+      <div class="complete-btn-arrow">→</div>
+    </button>`;
+  }
+  if (phData.status === 'completed') {
+    const next = PHASES[phIdx+1];
+    html += `<div class="completion-banner">
+      <div class="completion-star">✦</div>
+      <div class="completion-title">Phase ${phIdx+1} Complete</div>
+      <div class="completion-sub">${next?`Head to Phase ${phIdx+2}: <strong>${next.title}</strong> when ready.`:'All three phases done! The admin team has been notified.'}</div>
+    </div>`;
+  }
+  if (progress.completed) {
+    html = `<div class="completion-banner" style="margin-bottom:24px">
+      <div class="completion-star">🏆</div>
+      <div class="completion-title">Training Complete!</div>
+      <div class="completion-sub">The admin team has been notified and will follow up with your next steps. Welcome to the team.</div>
+    </div>` + html;
+  }
+  main.innerHTML = html;
+}
+
+function buildQuiz(phaseId, ph, phIdx) {
+  const answers = quizAnswers[phaseId] || {};
+  const locked  = quizLocked[phaseId]  || {};
+  const allAnswered = ph.quiz.every((_,qi) => answers[qi] !== undefined);
+  const allLocked   = ph.quiz.every((_,qi) => locked[qi]);
+  const allCorrect  = allLocked && ph.quiz.every((q,qi) => answers[qi] === q.correct);
+
+  let html = `<div class="quiz-section">
+    <div class="quiz-title">Phase ${phIdx+1} Quiz</div>
+    <div class="quiz-sub">Answer all ${ph.quiz.length} questions correctly to complete this phase.</div>`;
+
+  ph.quiz.forEach((q, qi) => {
+    const sel = answers[qi];
+    const lck = locked[qi];
+    html += `<div class="quiz-q">
+      <div class="quiz-q-text">${qi+1}. ${q.q}</div>
+      <div class="quiz-options">`;
+    q.opts.forEach((opt, oi) => {
+      let cls = '';
+      if (lck) { if (oi===q.correct) cls='correct'; else if (oi===sel && sel!==q.correct) cls='wrong'; }
+      else if (sel===oi) cls='selected';
+      html += `<button class="quiz-opt ${cls}" onclick="selectAnswer('${phaseId}',${qi},${oi})" ${lck?'disabled':''}><span class="quiz-opt-letter">${['A','B','C','D'][oi]}</span><span>${opt}</span></button>`;
+    });
+    html += `</div>`;
+    if (lck) html += `<div class="quiz-feedback show ${answers[qi]===q.correct?'ok':'no'}">${answers[qi]===q.correct?'Correct! ':'Not quite. '}${q.feedback}</div>`;
+    html += `</div>`;
+  });
+
+  if (allLocked && !allCorrect) {
+    html += `<div style="margin-top:16px;padding:14px 18px;background:rgba(255,87,51,.08);border:1px solid rgba(255,87,51,.2);border-radius:10px;font-size:.84rem;color:var(--coral)">
+      Some answers were incorrect. Review the lessons above, then <button onclick="resetQuiz('${phaseId}')" style="background:none;border:none;color:var(--coral);font-weight:700;cursor:pointer;text-decoration:underline;font-size:.84rem">retry the quiz</button>.
+    </div>`;
+  } else if (!allLocked) {
+    html += `<button class="quiz-submit" onclick="submitQuiz('${phaseId}')" ${allAnswered?'':'disabled'}>Submit Answers →</button>`;
+  }
+  html += `</div>`;
+  return html;
+}
+
+/* ── QUIZ ACTIONS ── */
+window.selectAnswer = function(pid, qi, oi) {
+  if ((quizLocked[pid]||{})[qi]) return;
+  if (!quizAnswers[pid]) quizAnswers[pid] = {};
+  quizAnswers[pid][qi] = oi;
+  renderPhase(pid);
+};
+window.submitQuiz = function(pid) {
+  const ph = PHASES.find(p => p.id === pid);
+  if (!ph) return;
+  if (!quizLocked[pid]) quizLocked[pid] = {};
+  ph.quiz.forEach((_,qi) => { quizLocked[pid][qi] = true; });
+  const allCorrect = ph.quiz.every((q,qi) => (quizAnswers[pid]||{})[qi] === q.correct);
+  if (allCorrect) updateDoc(progressRef, {[`phases.${pid}.quizPassed`]: true});
+  renderPhase(pid);
+};
+window.resetQuiz = function(pid) {
+  quizAnswers[pid] = {};
+  quizLocked[pid]  = {};
+  renderPhase(pid);
+};
+
+/* ── COMPLETE PHASE ── */
+window.completePhase = async function(pid) {
+  const phIdx = PHASES.findIndex(p => p.id === pid);
+  const next  = PHASES[phIdx+1];
+  const upd   = {[`phases.${pid}.status`]: 'completed'};
+  if (next) { upd[`phases.${next.id}.status`] = 'in_progress'; upd.phase = next.id; }
+  else {
+    upd.completed = true;
+    upd.completedAt = serverTimestamp();
+    await postCompletionNotice();
+  }
+  await updateDoc(progressRef, upd);
+  if (next) showView(next.id);
+};
+
+async function postCompletionNotice() {
+  const name = currentUser.displayName || currentUser.email;
+  await addDoc(collection(db, 'staffNotes'), {
+    authorUid: 'system', authorName: 'Training System',
+    text: `${name} (${currentUser.email}) has completed all 3 phases of staff training and is ready for onboarding review.`,
+    type: 'training_complete',
+    traineeUid: currentUser.uid, traineeEmail: currentUser.email, traineeName: name,
+    createdAt: serverTimestamp(),
+  });
+}
+
+/* ── CHAT ── */
+let chatUnsub = null;
+function startChatListener() {
+  const q = query(collection(db, 'trainingChats', currentUser.uid, 'messages'), orderBy('createdAt','asc'));
+  chatUnsub = onSnapshot(q, snap => {
+    const msgs = snap.docs.map(d => ({id:d.id,...d.data()}));
+    const unread = msgs.some(m => m.senderRole==='staff' && !m.readByTrainee);
+    document.getElementById('chatUnreadDot').style.display = unread ? 'block' : 'none';
+    if (currentView === 'chat') renderChatMessages(msgs);
+  });
+  setDoc(doc(db, 'trainingChats', currentUser.uid), {
+    traineeUid: currentUser.uid, traineeEmail: currentUser.email,
+    traineeName: currentUser.displayName || currentUser.email,
+    lastActivity: serverTimestamp(),
+  }, {merge:true});
+}
+function renderChatView() {
+  document.getElementById('mainArea').innerHTML = `<div class="chat-view">
+    <div class="chat-header">
+      <h1>Staff Chat</h1>
+      <p>Ask questions, get guidance — a real staff member will respond here.</p>
+    </div>
+    <div class="chat-messages" id="chatMessages"><div class="chat-empty"><div style="font-size:2rem">💬</div><span>Loading…</span></div></div>
+    <div class="chat-input-row">
+      <textarea class="chat-input" id="chatInput" placeholder="Type a message…" rows="1"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg()}"
+        oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+      <button class="chat-send" onclick="sendMsg()">Send</button>
+    </div>
+  </div>`;
+  getDocs(query(collection(db,'trainingChats',currentUser.uid,'messages'),orderBy('createdAt','asc'))).then(snap => {
+    const msgs = snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderChatMessages(msgs);
+    msgs.filter(m=>m.senderRole==='staff'&&!m.readByTrainee).forEach(m =>
+      updateDoc(doc(db,'trainingChats',currentUser.uid,'messages',m.id),{readByTrainee:true}));
+  });
+}
+function renderChatMessages(msgs) {
+  const el = document.getElementById('chatMessages');
+  if (!el) return;
+  if (!msgs.length) { el.innerHTML = `<div class="chat-empty"><div style="font-size:2rem">💬</div><span>No messages yet. Say hello!</span></div>`; return; }
+  el.innerHTML = msgs.map(m => {
+    if (m.type==='system') return `<div class="msg-system">${esc(m.text)}</div>`;
+    const mine = m.senderUid === currentUser.uid;
+    const time = m.createdAt?.toDate ? m.createdAt.toDate().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}) : '';
+    return `<div class="msg ${mine?'mine':''}">
+      <div class="msg-avatar">${(m.senderName||'?')[0].toUpperCase()}</div>
+      <div><div class="msg-bubble">${esc(m.text)}</div><div class="msg-meta">${esc(m.senderName||'')} · ${time}</div></div>
+    </div>`;
+  }).join('');
+  el.scrollTop = el.scrollHeight;
+}
+window.sendMsg = async function() {
+  const input = document.getElementById('chatInput');
+  const text = (input?.value||'').trim();
+  if (!text) return;
+  input.value = ''; input.style.height = '';
+  const name = currentUser.displayName || currentUser.email;
+  await addDoc(collection(db,'trainingChats',currentUser.uid,'messages'), {
+    text, senderUid: currentUser.uid, senderName: name,
+    senderRole: 'trainee', createdAt: serverTimestamp(),
+    readByTrainee: true, readByStaff: false,
+  });
+  updateDoc(doc(db,'trainingChats',currentUser.uid), {lastActivity:serverTimestamp()});
+};
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+</script>
+</body>
+</html>
