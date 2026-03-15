@@ -1160,15 +1160,17 @@
      TRAINING TAB
 ══════════════════════════════════════════ -->
 <div id="tabTraining" style="display:none">
-  <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px">
-    <div>
-      <div class="page-header-eyebrow" style="color:#A78BFA">People / Training</div>
-      <h1 style="color:#A78BFA">Staff Training</h1>
-      <div class="page-header-sub">Enroll staff, track progress, and chat with trainees in real time.</div>
+  <div class="page-header">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
+      <div>
+        <div class="page-header-eyebrow" style="color:#A78BFA">People / Training</div>
+        <h1 style="color:#A78BFA">Staff Training</h1>
+        <div class="page-header-sub">Enroll staff, track their progress through 3 phases, and chat with them in real time.</div>
+      </div>
+      <button onclick="openEnrollModal()" style="padding:12px 22px;border-radius:10px;border:none;background:#A78BFA;color:#fff;font-family:'DM Sans',sans-serif;font-weight:700;font-size:.86rem;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:all .18s;flex-shrink:0;white-space:nowrap" onmouseover="this.style.background='#9070f0';this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#A78BFA';this.style.transform='none'">
+        🎓 Enroll a Trainee
+      </button>
     </div>
-    <button onclick="openEnrollModal()" style="padding:10px 20px;border-radius:10px;border:none;background:#A78BFA;color:#fff;font-family:DM Sans,sans-serif;font-weight:700;font-size:.84rem;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all .18s;flex-shrink:0" onmouseover="this.style.background='#9070f0'" onmouseout="this.style.background='#A78BFA'">
-      🎓 Enroll a Trainee
-    </button>
   </div>
 
   <!-- Stats -->
@@ -2598,7 +2600,7 @@ function renderTraineeList() {
   const listEl = document.getElementById('traineeList');
   if (!listEl) return;
   if (!traineesCache.length) {
-    listEl.innerHTML = '<div style="color:var(--muted);font-size:.85rem;padding:24px 0">No trainees yet. When you add a staff member they'll appear here.</div>';
+    listEl.innerHTML = '<div style="color:var(--muted);font-size:.85rem;padding:24px 0">No trainees yet. When you enroll a staff member they will appear here.</div>';
     return;
   }
   listEl.innerHTML = '';
