@@ -1160,14 +1160,21 @@
      TRAINING TAB
 ══════════════════════════════════════════ -->
 <div id="tabTraining" style="display:none">
-  <div class="page-header">
-    <div class="page-header-eyebrow" style="color:#A78BFA">People / Training</div>
-    <h1 style="color:#A78BFA">Staff Training</h1>
-    <div class="page-header-sub">Track trainee progress and chat with them in real time.</div>
+  <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px">
+    <div>
+      <div class="page-header-eyebrow" style="color:#A78BFA">People / Training</div>
+      <h1 style="color:#A78BFA">Staff Training</h1>
+      <div class="page-header-sub">Enroll staff, track progress, and chat with trainees in real time.</div>
+    </div>
+    <button onclick="openEnrollModal()" style="padding:10px 20px;border-radius:10px;border:none;background:#A78BFA;color:#fff;font-family:DM Sans,sans-serif;font-weight:700;font-size:.84rem;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all .18s;flex-shrink:0" onmouseover="this.style.background='#9070f0'" onmouseout="this.style.background='#A78BFA'">
+      🎓 Enroll a Trainee
+    </button>
   </div>
-  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;margin-bottom:28px">
+
+  <!-- Stats -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:28px">
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px">
-      <div style="font-family:DM Mono,monospace;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Active Trainees</div>
+      <div style="font-family:DM Mono,monospace;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Active</div>
       <div style="font-size:1.6rem;font-weight:800;color:#A78BFA;font-family:Fraunces,serif" id="statActive">—</div>
     </div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px">
@@ -1175,22 +1182,31 @@
       <div style="font-size:1.6rem;font-weight:800;color:var(--sage);font-family:Fraunces,serif" id="statDone">—</div>
     </div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px">
-      <div style="font-family:DM Mono,monospace;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Awaiting Review</div>
+      <div style="font-family:DM Mono,monospace;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Needs Review</div>
       <div style="font-size:1.6rem;font-weight:800;color:var(--gold);font-family:Fraunces,serif" id="statReview">—</div>
     </div>
   </div>
-  <div style="display:grid;grid-template-columns:1fr 360px;gap:20px;min-height:500px">
+
+  <!-- Main grid -->
+  <div style="display:grid;grid-template-columns:1fr 380px;gap:20px;min-height:560px">
+
+    <!-- Trainee list -->
     <div>
       <div style="font-family:DM Mono,monospace;font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px">Trainees</div>
       <div id="traineeList"><div style="color:var(--muted);font-size:.85rem;padding:24px 0">Loading…</div></div>
     </div>
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;display:flex;flex-direction:column;overflow:hidden;height:600px">
-      <div style="padding:16px 18px;border-bottom:1px solid var(--border);flex-shrink:0">
-        <div style="font-weight:700;color:var(--txt);font-size:.9rem;margin-bottom:2px" id="tchatName">Select a trainee</div>
-        <div style="font-size:.73rem;color:var(--muted)" id="tchatPhase">Click a trainee on the left to open their chat</div>
+
+    <!-- Chat panel -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;display:flex;flex-direction:column;overflow:hidden;height:560px;position:sticky;top:80px">
+      <div style="padding:14px 18px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:12px">
+        <div>
+          <div style="font-weight:700;color:var(--txt);font-size:.88rem" id="tchatName">Select a trainee</div>
+          <div style="font-size:.72rem;color:var(--muted);margin-top:2px" id="tchatPhase">Click a trainee to open chat</div>
+        </div>
+        <div id="tchatProgressDots" style="display:flex;gap:5px;flex-shrink:0"></div>
       </div>
       <div id="trainingChatMessages" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px;scrollbar-width:thin;scrollbar-color:var(--border) transparent">
-        <div style="text-align:center;color:var(--muted);font-size:.8rem;padding:32px 16px">No trainee selected.</div>
+        <div style="text-align:center;color:var(--muted);font-size:.8rem;padding:40px 16px;opacity:.5">No trainee selected.</div>
       </div>
       <div style="padding:12px 14px;border-top:1px solid var(--border);flex-shrink:0;display:flex;gap:8px;align-items:flex-end">
         <textarea id="tchatInput" placeholder="Message this trainee…" rows="1"
@@ -1198,10 +1214,37 @@
           onfocus="this.style.borderColor='#A78BFA'" onblur="this.style.borderColor='var(--border)'"
           oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,96)+'px'"
           onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendTrainingChat()}"></textarea>
-        <button onclick="sendTrainingChat()" style="width:34px;height:34px;border-radius:8px;border:none;background:#A78BFA;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.9rem;transition:all .18s">&#x27A4;</button>
+        <button onclick="sendTrainingChat()" style="width:34px;height:34px;border-radius:8px;border:none;background:#A78BFA;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.95rem;transition:background .18s" onmouseover="this.style.background='#9070f0'" onmouseout="this.style.background='#A78BFA'">&#x27A4;</button>
       </div>
     </div>
   </div>
+
+  <!-- Enroll Modal -->
+  <div id="enrollModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);z-index:500;align-items:center;justify-content:center">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:32px;width:100%;max-width:440px;margin:20px">
+      <div style="font-family:Fraunces,serif;font-size:1.3rem;font-weight:900;color:var(--txt);margin-bottom:6px">Enroll a Trainee</div>
+      <div style="font-size:.82rem;color:var(--muted);margin-bottom:24px;line-height:1.6">Enter the person's name and email. They will receive access to <strong>training.html</strong> immediately — they must already have an Elaborate account.</div>
+      <div style="margin-bottom:14px">
+        <label style="font-family:DM Mono,monospace;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:6px">Full Name</label>
+        <input id="enrollName" type="text" placeholder="e.g. Alex Johnson"
+          style="width:100%;padding:10px 14px;border-radius:9px;border:1px solid var(--border);background:var(--bg);color:var(--txt);font-family:DM Sans,sans-serif;font-size:.88rem;outline:none;transition:border-color .2s"
+          onfocus="this.style.borderColor='#A78BFA'" onblur="this.style.borderColor='var(--border)'" />
+      </div>
+      <div style="margin-bottom:24px">
+        <label style="font-family:DM Mono,monospace;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:6px">Email Address</label>
+        <input id="enrollEmail" type="email" placeholder="their Elaborate account email"
+          style="width:100%;padding:10px 14px;border-radius:9px;border:1px solid var(--border);background:var(--bg);color:var(--txt);font-family:DM Sans,sans-serif;font-size:.88rem;outline:none;transition:border-color .2s"
+          onfocus="this.style.borderColor='#A78BFA'" onblur="this.style.borderColor='var(--border)'"
+          onkeydown="if(event.key==='Enter') confirmEnroll()" />
+      </div>
+      <div id="enrollError" style="font-size:.8rem;color:var(--coral);margin-bottom:14px;display:none"></div>
+      <div style="display:flex;gap:10px">
+        <button onclick="confirmEnroll()" style="flex:1;padding:11px;border-radius:9px;border:none;background:#A78BFA;color:#fff;font-family:DM Sans,sans-serif;font-weight:700;font-size:.86rem;cursor:pointer;transition:background .18s" onmouseover="this.style.background='#9070f0'" onmouseout="this.style.background='#A78BFA'">Enroll →</button>
+        <button onclick="closeEnrollModal()" style="padding:11px 18px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:DM Sans,sans-serif;font-size:.86rem;cursor:pointer">Cancel</button>
+      </div>
+    </div>
+  </div>
+
 </div><!-- /tabTraining -->
 
   </div><!-- /dash-main -->
@@ -2603,7 +2646,20 @@ async function selectTrainee(t) {
   document.getElementById('tchatName').textContent = t.displayName || t.email || 'Trainee';
   const p = t.phases || {};
   const done = ['p1','p2','p3'].filter(n => p[n]?.status === 'completed').length;
-  document.getElementById('tchatPhase').textContent = done + '/3 phases complete' + (t.completed ? ' — training finished!' : ' · ' + (t.phase||'p1').toUpperCase() + ' in progress');
+  document.getElementById('tchatPhase').textContent = done + '/3 phases complete' + (t.completed ? ' — training finished!' : ' · Phase ' + (t.phase||'p1').replace('p','') + ' in progress');
+  // Phase dots
+  const dotsEl = document.getElementById('tchatProgressDots');
+  if (dotsEl) {
+    const phaseLabels = ['p1','p2','p3'];
+    dotsEl.innerHTML = phaseLabels.map((ph,i) => {
+      const st = p[ph]?.status || 'locked';
+      const bg = st==='completed' ? '#7DBE8E' : st==='in_progress' ? '#A78BFA' : 'rgba(255,255,255,.1)';
+      return '<div style="display:flex;flex-direction:column;align-items:center;gap:3px">' +
+        '<div style="width:9px;height:9px;border-radius:50%;background:'+bg+'"></div>' +
+        '<div style="font-family:DM Mono,monospace;font-size:.5rem;color:rgba(255,255,255,.25)">'+(i+1)+'</div>' +
+      '</div>';
+    }).join('');
+  }
 
   // Mark as reviewed if they completed
   if (t.completed && !t.reviewedByAdmin) {
@@ -2659,6 +2715,91 @@ function renderTrainingChat(msgs) {
   }).join('');
   el.scrollTop = el.scrollHeight;
 }
+
+window.openEnrollModal = function() {
+  const m = document.getElementById('enrollModal');
+  if (m) { m.style.display = 'flex'; document.getElementById('enrollName').focus(); }
+};
+window.closeEnrollModal = function() {
+  const m = document.getElementById('enrollModal');
+  if (m) m.style.display = 'none';
+  document.getElementById('enrollError').style.display = 'none';
+  document.getElementById('enrollName').value = '';
+  document.getElementById('enrollEmail').value = '';
+};
+window.confirmEnroll = async function() {
+  const nameVal  = document.getElementById('enrollName').value.trim();
+  const emailVal = document.getElementById('enrollEmail').value.trim().toLowerCase();
+  const errEl    = document.getElementById('enrollError');
+  errEl.style.display = 'none';
+
+  if (!nameVal)  { errEl.textContent = 'Please enter a name.';  errEl.style.display='block'; return; }
+  if (!emailVal || !emailVal.includes('@')) { errEl.textContent = 'Please enter a valid email.'; errEl.style.display='block'; return; }
+
+  try {
+    // Find the user by email in the users collection
+    const usersSnap = await getDocs(collection(db, 'users'));
+    const match = usersSnap.docs.find(d => (d.data().email||'').toLowerCase() === emailVal);
+    if (!match) {
+      errEl.textContent = 'No Elaborate account found for that email. They need to sign up at elaborateedu.github.io first.';
+      errEl.style.display = 'block';
+      return;
+    }
+    const uid = match.id;
+
+    // Check not already enrolled
+    const existing = await getDoc(doc(db, 'trainingProgress', uid));
+    if (existing.exists()) {
+      errEl.textContent = 'This person is already enrolled in training.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    // Create trainingProgress doc
+    await setDoc(doc(db, 'trainingProgress', uid), {
+      uid, email: emailVal, displayName: nameVal,
+      startedAt: serverTimestamp(), phase: 'p1',
+      completed: false, reviewedByAdmin: false,
+      enrolledBy: currentAdmin?.email || 'admin',
+      phases: {
+        p1: { status: 'in_progress', quizPassed: false },
+        p2: { status: 'locked',      quizPassed: false },
+        p3: { status: 'locked',      quizPassed: false },
+      },
+    });
+
+    // Create trainingChats doc + welcome message
+    await setDoc(doc(db, 'trainingChats', uid), {
+      traineeUid: uid, traineeEmail: emailVal, traineeName: nameVal,
+      lastActivity: serverTimestamp(),
+    });
+    await addDoc(collection(db, 'trainingChats', uid, 'messages'), {
+      text: 'Welcome to Elaborate Staff Training, ' + nameVal.split(' ')[0] + '! Work through all 3 phases to earn your staff rank. Use this chat to ask questions any time — a real staff member will reply here.',
+      senderUid: 'system', senderName: 'Training System',
+      senderRole: 'staff', type: 'system',
+      createdAt: serverTimestamp(),
+      readByTrainee: false, readByStaff: true,
+    });
+
+    // Add trainee rank to admins collection so they can log into admin portal later
+    const adminSnap = await getDoc(doc(db, 'admins', uid));
+    if (!adminSnap.exists()) {
+      await setDoc(doc(db, 'admins', uid), {
+        email: emailVal, displayName: nameVal,
+        avatarUrl: '', rank: 'trainee',
+        inTraining: true, createdAt: serverTimestamp(),
+      });
+    }
+
+    showToast('✓ ' + nameVal + ' enrolled in training!');
+    auditLog('training.enrolled', { email: emailVal, name: nameVal, uid });
+    closeEnrollModal();
+    loadTrainingTab();
+  } catch(e) {
+    errEl.textContent = 'Error: ' + e.message;
+    errEl.style.display = 'block';
+  }
+};
 
 window.sendTrainingChat = async function() {
   if (!selectedTrainee || !currentAdmin) return;
